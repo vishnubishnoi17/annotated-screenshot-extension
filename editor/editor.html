@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Annotated Screenshot Editor</title>
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+
+  <div id="toolbar">
+    <!-- Annotation tools -->
+    <button data-tool="arrow">Arrow</button>
+    <button data-tool="step">Point</button>
+    <button data-tool="blur">Blur</button>
+    <button data-tool="draw">Draw</button>
+
+    <!-- History -->
+    <button id="undo">Undo</button>
+    <button id="redo">Redo</button>
+
+    <!-- Export -->
+    <button id="png">PNG</button>
+    <button id="pdf">PDF</button>
+    <button id="clip">Clipboard</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <!-- Libraries -->
+  <script src="libs/jspdf.umd.min.js"></script>
+
+  <!-- Main logic -->
+  <script src="editor.js"></script>
+
+</body>
+</html>

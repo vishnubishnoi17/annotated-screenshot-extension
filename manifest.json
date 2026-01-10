@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Annotated Full Page Screenshots",
+  "version": "1.0.1",
+  "description": "Capture full pages and annotate them in one click",
+
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "downloads"
+  ],
+
+  "host_permissions": [
+  "<all_urls>",
+  "chrome-extension://*/*"
+  ],
+
+  "background": {
+    "service_worker": "background/serviceWorker.js"
+  },
+
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+
+  "icons": {
+    "128": "assets/icons/icon128.png"
+  }
+}
+
+

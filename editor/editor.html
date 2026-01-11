@@ -2,35 +2,163 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Annotated Screenshot Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenshot Editor - Pro</title>
   <link rel="stylesheet" href="editor.css">
 </head>
 <body>
+  <!-- Top Toolbar -->
+  <div id="toolbar" class="toolbar">
+    <!-- Logo -->
+    <div class="toolbar-section logo-section">
+      <span class="logo-icon">📸</span>
+      <span class="logo-text">Screenshot Editor</span>
+    </div>
 
-  <div id="toolbar">
-    <!-- Annotation tools -->
-    <button data-tool="arrow">Arrow</button>
-    <button data-tool="step">Point</button>
-    <button data-tool="blur">Blur</button>
-    <button data-tool="draw">Draw</button>
+    <!-- Drawing Tools -->
+    <div class="toolbar-section tools-section">
+      <button data-tool="select" class="tool-btn active" title="Select (V)">
+        <span class="icon">↖️</span>
+        <span class="label">Select</span>
+      </button>
+      <button data-tool="arrow" class="tool-btn" title="Arrow (A)">
+        <span class="icon">➡️</span>
+        <span class="label">Arrow</span>
+      </button>
+      <button data-tool="line" class="tool-btn" title="Line (L)">
+        <span class="icon">📏</span>
+        <span class="label">Line</span>
+      </button>
+      <button data-tool="rectangle" class="tool-btn" title="Rectangle (R)">
+        <span class="icon">⬜</span>
+        <span class="label">Box</span>
+      </button>
+      <button data-tool="circle" class="tool-btn" title="Circle (C)">
+        <span class="icon">⭕</span>
+        <span class="label">Circle</span>
+      </button>
+      <button data-tool="text" class="tool-btn" title="Text (T)">
+        <span class="icon">📝</span>
+        <span class="label">Text</span>
+      </button>
+      <button data-tool="draw" class="tool-btn" title="Draw (D)">
+        <span class="icon">✏️</span>
+        <span class="label">Draw</span>
+      </button>
+      <button data-tool="highlight" class="tool-btn" title="Highlight (H)">
+        <span class="icon">🖍️</span>
+        <span class="label">Highlight</span>
+      </button>
+      <button data-tool="step" class="tool-btn" title="Number (N)">
+        <span class="icon">🔢</span>
+        <span class="label">Step</span>
+      </button>
+      <button data-tool="blur" class="tool-btn" title="Blur (B)">
+        <span class="icon">🌫️</span>
+        <span class="label">Blur</span>
+      </button>
+    </div>
+
+    <!-- Color Picker -->
+    <div class="toolbar-section color-section">
+      <div class="color-picker-wrapper">
+        <input type="color" id="color-picker" value="#ff0000">
+        <label for="color-picker" class="color-label">Color</label>
+      </div>
+      <div class="color-presets">
+        <button class="color-preset" data-color="#ff0000" style="background:  #ff0000" title="Red"></button>
+        <button class="color-preset" data-color="#0000ff" style="background: #0000ff" title="Blue"></button>
+        <button class="color-preset" data-color="#00ff00" style="background: #00ff00" title="Green"></button>
+        <button class="color-preset" data-color="#ffff00" style="background:  #ffff00" title="Yellow"></button>
+        <button class="color-preset" data-color="#000000" style="background: #000000" title="Black"></button>
+        <button class="color-preset" data-color="#ffffff" style="background: #ffffff; border: 1px solid #ddd" title="White"></button>
+      </div>
+    </div>
+
+    <!-- Line Width -->
+    <div class="toolbar-section width-section">
+      <label for="line-width">Size:</label>
+      <input type="range" id="line-width" min="1" max="20" value="3">
+      <span id="width-value">3</span>
+    </div>
 
     <!-- History -->
-    <button id="undo">Undo</button>
-    <button id="redo">Redo</button>
+    <div class="toolbar-section history-section">
+      <button id="undo" class="action-btn" title="Undo (Ctrl+Z)">
+        <span class="icon">↶</span>
+        <span class="label">Undo</span>
+      </button>
+      <button id="redo" class="action-btn" title="Redo (Ctrl+Y)">
+        <span class="icon">↷</span>
+        <span class="label">Redo</span>
+      </button>
+      <button id="clear" class="action-btn" title="Clear All">
+        <span class="icon">🗑️</span>
+        <span class="label">Clear</span>
+      </button>
+    </div>
+
+    <!-- Zoom -->
+    <div class="toolbar-section zoom-section">
+      <button id="zoom-out" class="zoom-btn" title="Zoom Out (Ctrl+-)">−</button>
+      <span id="zoom-level">100%</span>
+      <button id="zoom-in" class="zoom-btn" title="Zoom In (Ctrl++)">+</button>
+      <button id="zoom-reset" class="zoom-btn" title="Reset (Ctrl+0)">⊙</button>
+    </div>
 
     <!-- Export -->
-    <button id="png">PNG</button>
-    <button id="pdf">PDF</button>
-    <button id="clip">Clipboard</button>
+    <div class="toolbar-section export-section">
+      <button id="png" class="export-btn png-btn" title="Download PNG">
+        <span class="icon">💾</span>
+        <span class="label">PNG</span>
+      </button>
+      <button id="pdf" class="export-btn pdf-btn" title="Download PDF">
+        <span class="icon">📄</span>
+        <span class="label">PDF</span>
+      </button>
+      <button id="clip" class="export-btn clip-btn" title="Copy to Clipboard">
+        <span class="icon">📋</span>
+        <span class="label">Copy</span>
+      </button>
+    </div>
   </div>
 
-  <canvas id="canvas"></canvas>
+  <!-- Canvas Container -->
+  <div id="canvas-container" class="canvas-container">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- Text Input Modal -->
+  <div id="text-modal" class="text-modal hidden">
+    <div class="text-modal-content">
+      <h3>Add Text</h3>
+      <input type="text" id="text-input" placeholder="Enter text... ">
+      <div class="text-controls">
+        <label>
+          Font Size:
+          <input type="number" id="font-size" min="10" max="100" value="16">
+        </label>
+        <label>
+          <input type="checkbox" id="text-bold"> Bold
+        </label>
+        <label>
+          <input type="checkbox" id="text-italic"> Italic
+        </label>
+      </div>
+      <div class="modal-buttons">
+        <button id="text-cancel" class="modal-btn cancel-btn">Cancel</button>
+        <button id="text-ok" class="modal-btn ok-btn">Add Text</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
 
   <!-- Libraries -->
-  <script src="libs/jspdf.umd.min.js"></script>
-
-  <!-- Main logic -->
+  <script src="lab/jspdf.umd.min.js"></script>
+  
+  <!-- Main Script -->
   <script src="editor.js"></script>
-
 </body>
 </html>

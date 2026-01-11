@@ -1,32 +1,48 @@
 {
   "manifest_version": 3,
-  "name": "Annotated Full Page Screenshots",
-  "version": "1.0.1",
-  "description": "Capture full pages and annotate them in one click",
-
+  "name": "Pro Screenshot Annotator",
+  "version": "2.0.0",
+  "description": "Professional screenshot tool with advanced annotation features - arrows, text, shapes, blur, highlight & more! ",
+  
   "permissions": [
     "tabs",
     "scripting",
     "storage",
-    "downloads"
+    "downloads",
+    "activeTab",
+    "contextMenus"
   ],
 
   "host_permissions": [
-  "<all_urls>",
-  "chrome-extension://*/*"
+    "<all_urls>"
   ],
 
   "background": {
     "service_worker": "background/serviceWorker.js"
   },
 
-  "action": {
-    "default_popup": "popup/popup.html"
+  "action":  {
+    "default_popup":  "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon128.png",
+      "48":  "assets/icons/icon128.png",
+      "128": "assets/icons/icon128.png"
+    }
   },
 
   "icons": {
+    "16": "assets/icons/icon128.png",
+    "48":  "assets/icons/icon128.png",
     "128": "assets/icons/icon128.png"
+  },
+
+  "commands": {
+    "capture-screenshot": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Capture full page screenshot"
+    }
   }
 }
-
-

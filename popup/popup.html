@@ -1,10 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <link rel="stylesheet" href="popup.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro Screenshot Annotator</title>
+  <link rel="stylesheet" href="popup. css">
 </head>
 <body>
-  <button id="capture">Capture Full Page</button>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="logo-icon">📸</span>
+        <h1>Screenshot Pro</h1>
+      </div>
+      <div class="version">v2.0</div>
+    </div>
+
+    <!-- Main Actions -->
+    <div class="actions">
+      <button id="capture-full" class="action-btn primary">
+        <span class="icon">🖼️</span>
+        <div class="btn-content">
+          <div class="btn-title">Full Page</div>
+          <div class="btn-subtitle">Capture entire page</div>
+        </div>
+        <span class="shortcut">Ctrl+Shift+S</span>
+      </button>
+
+      <button id="capture-visible" class="action-btn secondary">
+        <span class="icon">👁️</span>
+        <div class="btn-content">
+          <div class="btn-title">Visible Area</div>
+          <div class="btn-subtitle">Current viewport only</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Status -->
+    <div id="status" class="status"></div>
+
+    <!-- Quick Settings -->
+    <div class="quick-settings">
+      <div class="setting-row">
+        <label>
+          <input type="checkbox" id="auto-open">
+          <span>Auto-open editor</span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <label>
+          <input type="checkbox" id="play-sound">
+          <span>Play sound effects</span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <label>
+          <span>Capture delay: </span>
+          <select id="capture-delay">
+            <option value="300">Fast (300ms)</option>
+            <option value="500" selected>Normal (500ms)</option>
+            <option value="1000">Slow (1s)</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <button id="help" class="footer-btn">❓ Help</button>
+      <button id="shortcuts" class="footer-btn">⌨️ Shortcuts</button>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <div class="loading-text">Capturing screenshot...</div>
+    <div class="loading-progress">
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="progress-text" class="progress-text">0%</div>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>

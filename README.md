@@ -1,270 +1,236 @@
-# 📸 Pro Screenshot Annotator - Chrome Extension
+# 📸 Pro Screenshot Annotator
 
-> **Professional screenshot tool with advanced annotation features**
+A powerful Chrome/Edge extension for capturing and annotating screenshots with professional-grade editing tools.  Perfect for creating tutorials, bug reports, documentation, and visual feedback.
 
-![Version](https://img.shields.io/badge/version-2.0. 0-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Chrome](https://img.shields.io/badge/chrome-extension-yellow)
+![Manifest](https://img.shields.io/badge/manifest-v3-orange)
 
 ## ✨ Features
 
-### 🎯 Capture Modes
-- **Full Page Screenshot** - Automatically scrolls and captures entire web pages
-- **Visible Area** - Quick capture of current viewport
-- **Right-click Context Menu** - Capture from anywhere
-- **Keyboard Shortcut** - `Ctrl+Shift+S` (or `Cmd+Shift+S` on Mac)
+### Screenshot Capture
+- **Full Page Capture**: Automatically stitches multiple screenshots to capture entire web pages
+- **Visible Area Capture**: Quick capture of current viewport
+- **Context Menu Integration**: Right-click anywhere to capture
+- **Keyboard Shortcut**: `Ctrl+Shift+S` (Windows/Linux) or `Cmd+Shift+S` (Mac)
+- **Smart Scrolling**: Handles dynamic content and long pages
+- **Progress Indicator**: Visual feedback during full-page captures
 
-### 🎨 Annotation Tools
-| Tool | Icon | Shortcut | Description |
-|------|------|----------|-------------|
-| Select | ↖️ | `V` | Select and move annotations |
-| Arrow | ➡️ | `A` | Draw arrows to point things out |
-| Line | 📏 | `L` | Draw straight lines |
-| Rectangle | ⬜ | `R` | Draw rectangular boxes |
-| Circle | ⭕ | `C` | Draw circles |
-| Text | 📝 | `T` | Add custom text |
-| Draw | ✏️ | `D` | Free-hand drawing |
-| Highlight | 🖍️ | `H` | Transparent highlighter |
-| Number | 🔢 | `N` | Add numbered step markers |
-| Blur | 🌫️ | `B` | Blur sensitive areas |
+### Annotation Tools
+- **✏️ Drawing Tools**
+  - Freehand drawing
+  - Arrows with customizable styles
+  - Lines and shapes (rectangles, circles)
+  - Step numbering for tutorials
+  - Text annotations with customizable fonts
+  - Highlighting tool
 
-### 🎨 Customization
-- **Color Picker** - Choose any color
-- **6 Color Presets** - Quick access to common colors
-- **Line Width** - Adjustable from 1-20px
-- **Text Formatting** - Bold, italic, custom sizes (10-100px)
+- **🎨 Customization**
+  - Color picker with preset palette
+  - Adjustable line width (1-20px)
+  - Multiple color presets (Red, Blue, Yellow, Green, Purple, Orange, Black, White)
+  - Custom colors via color picker
 
-### 💾 Export Options
-- **PNG** - High-quality image export
-- **PDF** - Professional PDF documents
-- **Clipboard** - Quick copy & paste
+- **🌫️ Privacy Features**
+  - Blur tool for sensitive information
+  - Redaction capabilities
 
-### ⚡ Advanced Features
-- **Unlimited Undo/Redo** - Full history management
-- **Zoom** - Up to 300% (scroll wheel or buttons)
-- **Auto-save Settings** - Remembers your preferences
-- **Toast Notifications** - Real-time feedback
-- **Keyboard Shortcuts** - Speed up your workflow
-- **Progress Indicator** - See capture progress in real-time
+- **📐 Canvas Tools**
+  - Pan and zoom
+  - Undo/Redo (Ctrl+Z / Ctrl+Y)
+  - Clear all annotations
+  - Selection tool for moving/editing
+  - Grid and guides (coming soon)
+
+### Export Options
+- **PNG Export**: High-quality image download
+- **PDF Export**: Single or multi-page PDFs
+- **Clipboard Copy**: Quick copy to paste anywhere
 
 ## 🚀 Installation
 
-### Method 1: From Source (Developer Mode)
+### From Chrome Web Store (Recommended)
+*Coming soon...*
 
-1. **Download the Extension**
+### Manual Installation (Developer Mode)
+
+1. **Clone or Download the Repository**
    ```bash
-   git clone https://github.com/vishnubishnoi17/annotated-screenshot-extension.git
+   git clone https://github.com/vishnubishnoi17/annotated-screenshot-extension. git
    cd annotated-screenshot-extension
    ```
 
-2. **Create Icon** (Required)
-   - Create a 128x128 PNG icon
-   - Save it as `assets/icons/icon128.png`
-   - Or use this placeholder command:
-   ```bash
-   mkdir -p assets/icons
-   # Use any image editor to create a 128x128 icon
-   ```
-
-3. **Load in Chrome**
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable **Developer mode** (toggle in top-right)
+2. **Load in Chrome/Edge**
+   - Open `chrome://extensions/` (or `edge://extensions/`)
+   - Enable **Developer mode** (toggle in top-right corner)
    - Click **Load unpacked**
-   - Select the extension folder
-   - Done!  🎉
+   - Select the extension directory
 
-### Method 2: Quick Icon Creation
+3. **Pin the Extension**
+   - Click the extensions icon (puzzle piece) in your toolbar
+   - Find "Pro Screenshot Annotator"
+   - Click the pin icon to keep it visible
 
-Use this SVG and convert to PNG at 128x128:
-
-```svg
-<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <rect width="128" height="128" rx="24" fill="url(#grad)"/>
-  <text x="64" y="85" font-size="60" text-anchor="middle" fill="white">📸</text>
-</svg>
-```
-
-Convert at:  [SVG to PNG Converter](https://cloudconvert.com/svg-to-png)
-
-## 📖 Usage Guide
+## 📖 Usage
 
 ### Capturing Screenshots
 
-1. **Click Extension Icon** → Select capture mode
-2. **Right-click** on any page → "📸 Capture Full Page Screenshot"
-3. **Keyboard**:  `Ctrl+Shift+S` (Windows/Linux) or `Cmd+Shift+S` (Mac)
+#### Method 1: Extension Popup
+1. Click the extension icon in your toolbar
+2. Choose either: 
+   - **Full Page**:  Captures the entire scrollable page
+   - **Visible Area**: Captures only what's currently visible
 
-### Annotating
+#### Method 2: Keyboard Shortcut
+- Press `Ctrl+Shift+S` (Windows/Linux) or `Cmd+Shift+S` (Mac)
 
-1. **Select a Tool** from the toolbar
-2. **Choose a Color** (click color picker or presets)
-3. **Adjust Line Width** with the slider
-4. **Draw on Canvas** - Click and drag
-5. **Add Text** - Click where you want text, type, and confirm
+#### Method 3: Context Menu
+- Right-click anywhere on a page
+- Select "📸 Capture Full Page Screenshot"
 
-### Exporting
+### Annotating Screenshots
 
-- **PNG**:  Click 💾 PNG button → Choose save location
-- **PDF**: Click 📄 PDF button → Auto-downloads
-- **Clipboard**: Click 📋 Copy → Paste anywhere
+Once a screenshot is captured, the editor opens automatically (if enabled in settings):
 
-## ⌨️ Keyboard Shortcuts
+1. **Select a Tool** from the top toolbar
+2. **Choose a Color** from the color picker or presets
+3. **Adjust Line Width** using the slider
+4. **Draw on the Canvas**:
+   - Click and drag to draw shapes
+   - Click once for text tool, then type
+   - Use step tool to add numbered markers
+   - Use blur tool to redact sensitive info
 
-### Global
+5. **Export Your Work**:
+   - Click **PNG** to download as image
+   - Click **PDF** to export as PDF
+   - Click **Copy** to copy to clipboard
+
+### Keyboard Shortcuts
+
+#### Global
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+Shift+S` | Capture screenshot |
+| `Ctrl+Shift+S` / `Cmd+Shift+S` | Capture screenshot |
 
-### Editor
+#### Editor
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+Z` | Undo |
-| `Ctrl+Y` | Redo |
-| `Ctrl++` | Zoom in |
-| `Ctrl+-` | Zoom out |
-| `Ctrl+0` | Reset zoom |
-| `V` | Select tool |
-| `A` | Arrow tool |
-| `L` | Line tool |
-| `R` | Rectangle tool |
-| `C` | Circle tool |
-| `T` | Text tool |
-| `D` | Draw tool |
-| `H` | Highlight tool |
-| `N` | Number tool |
-| `B` | Blur tool |
-| `Delete` | Delete selected |
+| `Ctrl+Z` / `Cmd+Z` | Undo |
+| `Ctrl+Y` / `Cmd+Y` | Redo |
+| `Delete` / `Backspace` | Delete selected object |
+| `1-8` | Select tool (1=Select, 2=Arrow, etc.) |
+| `Ctrl++` / `Cmd++` | Zoom in |
+| `Ctrl+-` / `Cmd+-` | Zoom out |
+| `Ctrl+0` / `Cmd+0` | Reset zoom |
 
-## 🛠️ Project Structure
+## ⚙️ Settings
+
+Access settings from the extension popup:
+
+- **Auto-open Editor**:  Automatically open the editor after capturing
+- **Play Sound Effects**: Audio feedback for actions
+- **Capture Delay**:  Adjust timing for page rendering
+  - Fast (300ms)
+  - Normal (500ms) - Recommended
+  - Slow (1s) - For heavy pages
+
+## 🏗️ Project Structure
 
 ```
 annotated-screenshot-extension/
-├── manifest.json                 # Extension configuration
-├── background/
-│   └── serviceWorker.js         # Background tasks & capture logic
-├── popup/
-│   ├── popup.html               # Extension popup UI
-│   ├── popup.js                 # Popup interactions
-│   └── popup. css                # Popup styling
-├── editor/
-│   ├── editor.html              # Editor UI
-│   ├── editor.js                # Editor logic & tools
-│   ├── editor.css               # Editor styling
-│   └── lab/
-│       └── jspdf.umd.min.js    # PDF export library
+├── manifest.json           # Extension configuration
 ├── assets/
-│   └── icons/
-│       └── icon128.png          # Extension icon
-└── README.md                    # Documentation
+│   └── icons/              # Extension icons
+├── background/
+│   └── serviceWorker.js    # Background service worker
+├── popup/
+│   ├── popup.html          # Extension popup UI
+│   ├── popup. css           # Popup styles
+│   └── popup.js            # Popup logic
+├── editor/
+│   ├── editor.html         # Screenshot editor UI
+│   ├── editor. css          # Editor styles
+│   └── editor.js           # Editor logic & canvas handling
+├── content/
+│   └── scroll.js           # Content script for scrolling
+└── utils/
+    └── stitch.js           # Image stitching utilities
 ```
 
-## 🔧 Technical Details
+## 🛠️ Technical Details
 
 - **Manifest Version**: 3
-- **Minimum Chrome Version**: 88+
+- **Languages**: JavaScript (66. 9%), CSS (19.2%), HTML (13.9%)
 - **Permissions**: 
-  - `tabs` - Access to tab information
-  - `scripting` - Inject capture scripts
-  - `storage` - Save screenshots and settings
-  - `downloads` - Export files
-  - `activeTab` - Capture visible content
-  - `contextMenus` - Right-click menu
-- **Libraries**: 
-  - jsPDF 2.5.1 - PDF generation
-
-## 🐛 Troubleshooting
-
-### "No screenshot data found"
-- Make sure you captured a screenshot before opening the editor
-- Try capturing again
-
-### Icon not showing
-- Ensure `assets/icons/icon128.png` exists
-- Image must be exactly 128x128 pixels
-- Format must be PNG
-
-### PDF export not working
-- Check that `editor/lab/jspdf.umd.min.js` exists
-- Download from: [jsPDF](https://github.com/parallax/jsPDF/releases)
-- File size should be ~360KB
-
-### Cannot capture some pages
-- Chrome internal pages (`chrome://`) cannot be captured
-- Extension pages cannot be captured
-- Some sites block screenshots (rare)
-
-### Capture is incomplete
-- Increase capture delay in popup settings
-- Some dynamic pages need more time to load
-
-## 🎯 Tips & Tricks
-
-1. **Use Number Tool** for step-by-step tutorials
-2. **Blur Tool** is perfect for hiding passwords/sensitive data
-3. **Highlight + Light Yellow** works great for emphasizing text
-4. **Arrow + Red** draws attention to important elements
-5. **Text Tool** with white color + bold = perfect callouts
-6. **Zoom In** (Ctrl++) for precise annotations
-7. **Undo** (Ctrl+Z) is your friend - experiment freely!
+  - `tabs` - Access to browser tabs
+  - `scripting` - Inject scripts for page capture
+  - `storage` - Save user preferences
+  - `downloads` - Export screenshots
+  - `activeTab` - Interact with active tab
+  - `contextMenus` - Add right-click menu
 
 ## 🔒 Privacy
 
-- **All processing is local** - Nothing sent to external servers
-- **No tracking or analytics**
-- **No data collection**
-- **Screenshots stored temporarily** in browser storage
-- **Cleared on browser close** (unless saved)
-
-## 📝 License
-
-MIT License - See [LICENSE](LICENSE) file for details
+- **No Data Collection**: This extension does not collect or transmit any user data
+- **Local Processing**: All screenshots and annotations are processed locally
+- **No External Servers**: No data is sent to external servers
+- **Permissions**: Only requests necessary permissions for functionality
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please: 
+Contributions are welcome! Here's how you can help:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 💖 Support
+### Development Setup
 
-If you find this extension helpful: 
-- ⭐ Star this repository
-- 🐛 Report bugs via [Issues](https://github.com/vishnubishnoi17/annotated-screenshot-extension/issues)
-- 💡 Suggest features
-- 📢 Share with others
+1. Clone the repository
+2. Make your changes
+3. Test in Chrome/Edge using Developer Mode
+4. Submit a PR with a clear description
 
-## 📧 Contact
+## 🐛 Known Issues & Limitations
 
-**Author**:  Vishnu Bishnoi  
-**GitHub**: [@vishnubishnoi17](https://github.com/vishnubishnoi17)
+- Cannot capture Chrome internal pages (`chrome://`, `edge://`, etc.)
+- Some dynamic content may not render correctly during full-page capture
+- Very long pages (>50,000px) may experience performance issues
 
-## 🎉 Changelog
+## 📝 Changelog
 
-### v2.0.0 (Current)
-- ✨ 10 annotation tools
-- 🎨 Full color customization
-- 📝 Text with formatting
-- 🔍 Zoom functionality
-- ⌨️ Keyboard shortcuts
-- 🎯 Right-click context menu
-- 💾 Multiple export formats
-- 🌟 Modern UI design
+### Version 2.0.0
+- Complete rewrite with Manifest V3
+- Added professional annotation tools
+- Improved full-page capture algorithm
+- Added export to PDF functionality
+- Enhanced UI/UX with modern design
+- Added keyboard shortcuts
+- Improved performance and reliability
 
-### v1.0.0
-- Basic screenshot capture
-- Simple annotations
-- PNG export
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**Vishnu Bishnoi**
+- GitHub: [@vishnubishnoi17](https://github.com/vishnubishnoi17)
+
+## 🙏 Acknowledgments
+
+- Thanks to all contributors who have helped improve this extension
+- Inspired by tools like Awesome Screenshot and Nimbus Screenshot
+
+## 📧 Support
+
+If you encounter any issues or have questions: 
+- Open an issue on [GitHub](https://github.com/vishnubishnoi17/annotated-screenshot-extension/issues)
+- Check existing issues for solutions
 
 ---
 
-**Made with ❤️ by Vishnu Bishnoi**
+**If you find this extension helpful, please ⭐ star the repository!**

@@ -3,7 +3,7 @@
 ======================================== */
 
 const canvas = document.getElementById("canvas");
-const ctx = canvas. getContext("2d");
+const ctx = canvas.getContext("2d");
 
 let tool = "select";
 let currentColor = "#ff0000";
@@ -57,7 +57,7 @@ function setupToolbar() {
   });
 
   // Color presets
-  document.querySelectorAll(". color-preset").forEach(btn => {
+  document.querySelectorAll(".color-preset").forEach(btn => {
     btn.addEventListener("click", () => {
       currentColor = btn.dataset.color;
       colorPicker.value = currentColor;
@@ -194,7 +194,7 @@ function handleMouseMove(e) {
   const pos = getMousePos(e);
 
   if (tool === "draw" || tool === "highlight") {
-    currentPath.push({ x: pos. x, y: pos.y });
+    currentPath.push({ x: pos.x, y: pos.y });
     redraw();
     
     // Preview current path

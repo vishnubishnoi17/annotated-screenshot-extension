@@ -25,7 +25,7 @@ chrome.commands.onCommand.addListener((command) => {
 // Message listener
 chrome.runtime.onMessage. addListener(async (msg, sender, sendResponse) => {
   if (msg.action === "CAPTURE_FULL_PAGE") {
-    const [tab] = await chrome.tabs. query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) captureFullPage(tab);
   }
   
@@ -38,13 +38,14 @@ chrome.runtime.onMessage. addListener(async (msg, sender, sendResponse) => {
 // Full page capture
 async function captureFullPage(tab) {
   try {
-    if (!tab || tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://") || tab.url.startsWith("edge://")) {
+    if (!tab || tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://") || tab.url.startsWith("edge://") || tab.url.startsWith("devtools://")
+) {
       showNotification("Cannot capture Chrome internal pages", "error");
       return;
     }
 
     // Show badge
-    chrome.action.setBadgeText({ text: ".. .", tabId: tab.id });
+    chrome.action.setBadgeText({ text: "...", tabId: tab.id });
     chrome.action.setBadgeBackgroundColor({ color: "#4285f4", tabId: tab.id });
 
     // Inject capture script
@@ -80,7 +81,7 @@ async function captureFullPage(tab) {
     let capturedHeight = 0;
 
     // Capture screenshots in chunks
-    for (let y = 0; y < meta. height; y += meta.viewportHeight) {
+    for (let y = 0; y < meta.height; y += meta.viewportHeight) {
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: (scrollY) => window.scrollTo(0, scrollY),
@@ -104,7 +105,7 @@ async function captureFullPage(tab) {
 
     // Restore scroll position
     await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
+      target: { tabId:tab.id },
       func: (x, y) => {
         window.scrollTo(x, y);
         document.body.style.overflow = '';

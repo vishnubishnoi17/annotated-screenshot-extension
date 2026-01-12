@@ -2,7 +2,7 @@
 
 A powerful Chrome/Edge extension for capturing and annotating screenshots with professional-grade editing tools.  Perfect for creating tutorials, bug reports, documentation, and visual feedback.
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Manifest](https://img.shields.io/badge/manifest-v3-orange)
 
@@ -48,6 +48,9 @@ A powerful Chrome/Edge extension for capturing and annotating screenshots with p
 - **Clipboard Copy**: Quick copy to paste anywhere
 
 ## 🚀 Installation
+
+### From Opera Add-ons Store
+*Coming soon - In review for Opera Web Store. See [OPERA_STORE_GUIDE.md](OPERA_STORE_GUIDE.md) for details.*
 
 ### From Chrome Web Store (Recommended)
 *Coming soon...*
@@ -172,10 +175,15 @@ annotated-screenshot-extension/
 
 ## 🔒 Privacy
 
+**Pro Screenshot Annotator respects your privacy:**
+
 - **No Data Collection**: This extension does not collect or transmit any user data
-- **Local Processing**: All screenshots and annotations are processed locally
-- **No External Servers**: No data is sent to external servers
-- **Permissions**: Only requests necessary permissions for functionality
+- **Local Processing**: All screenshots and annotations are processed locally on your device
+- **No External Servers**: No data is sent to external servers or third parties
+- **No Analytics or Tracking**: We don't track your usage or behavior
+- **Transparent Permissions**: Only requests necessary permissions for functionality
+
+For full details, see our [Privacy Policy](PRIVACY.md).
 
 ## 🤝 Contributing
 
@@ -202,14 +210,18 @@ Contributions are welcome! Here's how you can help:
 
 ## 📝 Changelog
 
-### Version 2.0.0
-- Complete rewrite with Manifest V3
-- Added professional annotation tools
-- Improved full-page capture algorithm
-- Added export to PDF functionality
-- Enhanced UI/UX with modern design
-- Added keyboard shortcuts
-- Improved performance and reliability
+### Version 1.0.0 (January 2026)
+**Initial Opera Web Store Release**
+- Professional screenshot capture with full-page support
+- Advanced annotation tools (drawing, arrows, shapes, text, blur)
+- Multiple export options (PNG, PDF, clipboard)
+- Keyboard shortcuts and context menu integration
+- Customizable settings and preferences
+- Privacy-focused: all processing happens locally
+- Manifest V3 compliance
+- Complete documentation and privacy policy
+
+*Previous internal version (2.0.0) was a development build and not publicly released.*
 
 ## 📄 License
 

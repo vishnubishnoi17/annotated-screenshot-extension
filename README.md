@@ -168,25 +168,35 @@ annotated-screenshot-extension/
 
 ## 🔒 Privacy
 
-**Pro Screenshot Annotator respects your privacy:**
+# Privacy Policy for Pro Screenshot Annotator
 
-- **No Data Collection**: This extension does not collect or transmit any user data
-- **Local Processing**: All screenshots and annotations are processed locally on your device
-- **No External Servers**: No data is sent to external servers or third parties
-- **No Analytics or Tracking**: We don't track your usage or behavior
-- **Transparent Permissions**: Only requests necessary permissions for functionality
+## Data Collection
+Pro Screenshot Annotator does NOT collect, store, or transmit any personal data or user information.
 
-For full details, see our [Privacy Policy](PRIVACY.md).
+## Local Processing
+- All screenshots are captured and processed locally on your device
+- Annotations are stored temporarily in your browser's local storage
+- No data is sent to external servers
+- No analytics or tracking
 
-## 🤝 Contributing
+## Permissions Explanation
+- **tabs**: Required to capture screenshots of web pages
+- **scripting**: Required to inject capture scripts into pages
+- **storage**: Stores your preferences (settings) locally
+- **downloads**: Allows saving screenshots to your device
+- **activeTab**: Access current tab for screenshot capture
+- **contextMenus**: Adds right-click menu option
+- **<all_urls>**: Required to capture screenshots on any website you visit
 
-Contributions are welcome! Here's how you can help:
+## Third-Party Services
+This extension does not use any third-party services, APIs, or external connections.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## Changes to Privacy Policy
+Any changes to this privacy policy will be updated in this document.
+
+## Contact
+For questions or concerns: https://github.com/vishnubishnoi17/annotated-screenshot-extension/issues
+
 
 ### Development Setup
 

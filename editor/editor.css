@@ -16,6 +16,8 @@ body {
 
 /* Toolbar */
 .toolbar {
+  position: sticky;
+  top: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 12px 20px;
   display: flex;

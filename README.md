@@ -47,13 +47,6 @@ A powerful Chrome/Edge extension for capturing and annotating screenshots with p
 - **PDF Export**: Single or multi-page PDFs
 - **Clipboard Copy**: Quick copy to paste anywhere
 
-## 🚀 Installation
-
-### From Opera Add-ons Store
-*Coming soon - In review for Opera Web Store. See [OPERA_STORE_GUIDE.md](OPERA_STORE_GUIDE.md) for details.*
-
-### From Chrome Web Store (Recommended)
-*Coming soon...*
 
 ### Manual Installation (Developer Mode)
 

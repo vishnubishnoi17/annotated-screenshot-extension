@@ -52,7 +52,7 @@ A powerful Chrome/Edge extension for capturing and annotating screenshots with p
 
 1. **Clone or Download the Repository**
    ```bash
-   git clone https://github.com/vishnubishnoi17/annotated-screenshot-extension. git
+   git clone https://github.com/vishnubishnoi17/annotated-screenshot-extension.git
    cd annotated-screenshot-extension
    ```
 

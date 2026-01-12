@@ -1,4 +1,4 @@
-# 📸 Pro Screenshot Annotator
+# 📸 Pro Screenshot Annotator ✨
 
 A powerful Chrome/Edge extension for capturing and annotating screenshots with professional-grade editing tools.  Perfect for creating tutorials, bug reports, documentation, and visual feedback.
 
@@ -17,7 +17,7 @@ A powerful Chrome/Edge extension for capturing and annotating screenshots with p
 - **Progress Indicator**: Visual feedback during full-page captures
 
 ### Annotation Tools
-- **✏️ Drawing Tools**
+- ** Drawing Tools**
   - Freehand drawing
   - Arrows with customizable styles
   - Lines and shapes (rectangles, circles)
@@ -25,17 +25,17 @@ A powerful Chrome/Edge extension for capturing and annotating screenshots with p
   - Text annotations with customizable fonts
   - Highlighting tool
 
-- **🎨 Customization**
+- ** Customization**
   - Color picker with preset palette
   - Adjustable line width (1-20px)
   - Multiple color presets (Red, Blue, Yellow, Green, Purple, Orange, Black, White)
   - Custom colors via color picker
 
-- **🌫️ Privacy Features**
+- **Privacy Features**
   - Blur tool for sensitive information
   - Redaction capabilities
 
-- **📐 Canvas Tools**
+- ** Canvas Tools**
   - Pan and zoom
   - Undo/Redo (Ctrl+Z / Ctrl+Y)
   - Clear all annotations
@@ -67,7 +67,7 @@ A powerful Chrome/Edge extension for capturing and annotating screenshots with p
    - Find "Pro Screenshot Annotator"
    - Click the pin icon to keep it visible
 
-## 📖 Usage
+##  Usage
 
 ### Capturing Screenshots
 
@@ -120,7 +120,7 @@ Once a screenshot is captured, the editor opens automatically (if enabled in set
 | `Ctrl+-` / `Cmd+-` | Zoom out |
 | `Ctrl+0` / `Cmd+0` | Reset zoom |
 
-## ⚙️ Settings
+## Settings
 
 Access settings from the extension popup:
 
@@ -131,7 +131,7 @@ Access settings from the extension popup:
   - Normal (500ms) - Recommended
   - Slow (1s) - For heavy pages
 
-## 🏗️ Project Structure
+##  Project Structure
 
 ```
 annotated-screenshot-extension/
@@ -188,11 +188,6 @@ Pro Screenshot Annotator does NOT collect, store, or transmit any personal data 
 - **contextMenus**: Adds right-click menu option
 - **<all_urls>**: Required to capture screenshots on any website you visit
 
-## Third-Party Services
-This extension does not use any third-party services, APIs, or external connections.
-
-## Changes to Privacy Policy
-Any changes to this privacy policy will be updated in this document.
 
 ## Contact
 For questions or concerns: https://github.com/vishnubishnoi17/annotated-screenshot-extension/issues
@@ -203,7 +198,7 @@ For questions or concerns: https://github.com/vishnubishnoi17/annotated-screensh
 1. Clone the repository
 2. Make your changes
 3. Test in Chrome/Edge using Developer Mode
-4. Submit a PR with a clear description
+
 
 ## 🐛 Known Issues & Limitations
 
@@ -224,21 +219,20 @@ For questions or concerns: https://github.com/vishnubishnoi17/annotated-screensh
 - Manifest V3 compliance
 - Complete documentation and privacy policy
 
-*Previous internal version (2.0.0) was a development build and not publicly released.*
+### Future Enhencements :-
+  - Cropping section
+  - More ideas on work
+
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Author
+## Author
 
 **Vishnu Bishnoi**
 - GitHub: [@vishnubishnoi17](https://github.com/vishnubishnoi17)
 
-## 🙏 Acknowledgments
-
-- Thanks to all contributors who have helped improve this extension
-- Inspired by tools like Awesome Screenshot and Nimbus Screenshot
 
 ## 📧 Support
 
@@ -246,6 +240,4 @@ If you encounter any issues or have questions:
 - Open an issue on [GitHub](https://github.com/vishnubishnoi17/annotated-screenshot-extension/issues)
 - Check existing issues for solutions
 
----
-
-**If you find this extension helpful, please ⭐ star the repository!**
+### Thankqqq For Reading and issok

@@ -21,6 +21,14 @@ let isDrawing = false;
 let currentPath = [];
 
 let textPosition = null;
+let cropState = {
+  active: false,
+  startX:  0,
+  startY:  0,
+  endX: 0,
+  endY: 0,
+  isDragging: false
+};
 
 /* ========================================
    INITIALIZATION
@@ -103,6 +111,7 @@ function updateCursor() {
   canvas.className = '';
   if (tool === "select") canvas.classList.add("select-mode");
   if (tool === "text") canvas.classList.add("text-mode");
+  if (tool === "crop") canvas.classList.add("crop-mode"); // ADD THIS LINE
 }
 
 /* ========================================
@@ -177,6 +186,16 @@ function handleMouseDown(e) {
   startX = pos.x;
   startY = pos.y;
 
+  if (tool === "crop") {
+    cropState.active = true;
+    cropState.isDragging = true;
+    cropState.startX = startX;
+    cropState.startY = startY;
+    cropState.endX = startX;
+    cropState.endY = startY;
+    return;
+  }
+
   if (tool === "text") {
     showTextModal(startX, startY);
     return;
@@ -189,7 +208,16 @@ function handleMouseDown(e) {
 }
 
 function handleMouseMove(e) {
-  if (!isDrawing) return;
+  if (cropState.isDragging && tool === "crop") {
+    const pos = getMousePos(e);
+    cropState.endX = pos.x;
+    cropState.endY = pos.y;
+    redraw();
+    drawCropPreview();
+    return;
+  }
+
+  if (! isDrawing) return;
 
   const pos = getMousePos(e);
 
@@ -207,6 +235,23 @@ function handleMouseMove(e) {
 }
 
 function handleMouseUp(e) {
+  if (tool === "crop" && cropState.isDragging) {
+    cropState.isDragging = false;
+    const pos = getMousePos(e);
+    cropState.endX = pos.x;
+    cropState.endY = pos.y;
+    
+    // Only show controls if area is meaningful (at least 10px)
+    const width = Math.abs(cropState. endX - cropState.startX);
+    const height = Math. abs(cropState.endY - cropState.startY);
+    
+    if (width > 10 && height > 10) {
+      showCropControls();
+    } else {
+      cancelCrop();
+    }
+    return;
+  }
   if (!isDrawing && tool === "select") return;
 
   const pos = getMousePos(e);
@@ -361,6 +406,203 @@ function drawLayer(layer) {
 /* ========================================
    DRAWING FUNCTIONS
 ======================================== */
+
+
+/* ========================================
+   CROP TOOL FUNCTIONS
+======================================== */
+
+function drawCropPreview() {
+  if (! cropState.active) return;
+  
+  const x = Math.min(cropState.startX, cropState.endX);
+  const y = Math.min(cropState.startY, cropState.endY);
+  const w = Math.abs(cropState. endX - cropState.startX);
+  const h = Math.abs(cropState.endY - cropState.startY);
+  
+  // Draw darkened overlay outside crop area
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+  
+  // Top
+  ctx.fillRect(0, 0, canvas.width, y);
+  // Bottom
+  ctx.fillRect(0, y + h, canvas.width, canvas.height - (y + h));
+  // Left
+  ctx.fillRect(0, y, x, h);
+  // Right
+  ctx.fillRect(x + w, y, canvas.width - (x + w), h);
+  
+  // Draw crop selection border
+  ctx.strokeStyle = "#00ff00";
+  ctx. lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
+  
+  // Draw corner handles
+  const handleSize = 10;
+  ctx.fillStyle = "#00ff00";
+  
+  // Top-left
+  ctx.fillRect(x - handleSize/2, y - handleSize/2, handleSize, handleSize);
+  // Top-right
+  ctx.fillRect(x + w - handleSize/2, y - handleSize/2, handleSize, handleSize);
+  // Bottom-left
+  ctx.fillRect(x - handleSize/2, y + h - handleSize/2, handleSize, handleSize);
+  // Bottom-right
+  ctx.fillRect(x + w - handleSize/2, y + h - handleSize/2, handleSize, handleSize);
+  
+  // Show dimensions
+  ctx.fillStyle = "#00ff00";
+  ctx.font = "bold 14px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(`${Math.round(w)} × ${Math.round(h)}`, x + w/2, y - 10);
+  
+  ctx.restore();
+}
+
+function showCropControls() {
+  // Remove existing controls if any
+  const existing = document.getElementById("crop-controls");
+  if (existing) existing.remove();
+  
+  const controls = document.createElement("div");
+  controls.id = "crop-controls";
+  controls.className = "crop-controls";
+  controls.innerHTML = `
+    <button class="apply-crop">✓ Apply Crop</button>
+    <button class="cancel-crop">✕ Cancel</button>
+  `;
+  
+  document.body.appendChild(controls);
+  
+  controls.querySelector(".apply-crop").addEventListener("click", applyCrop);
+  controls.querySelector(".cancel-crop").addEventListener("click", cancelCrop);
+}
+
+function applyCrop() {
+  const x = Math.min(cropState.startX, cropState. endX);
+  const y = Math.min(cropState.startY, cropState.endY);
+  const w = Math.abs(cropState.endX - cropState.startX);
+  const h = Math.abs(cropState.endY - cropState.startY);
+  
+  // Create new cropped image
+  const croppedCanvas = document.createElement("canvas");
+  croppedCanvas.width = w;
+  croppedCanvas. height = h;
+  const croppedCtx = croppedCanvas.getContext("2d");
+  
+  // Draw base image cropped
+  croppedCtx.drawImage(baseImage, x, y, w, h, 0, 0, w, h);
+  
+  // Update base image
+  baseImage = new Image();
+  baseImage.src = croppedCanvas.toDataURL();
+  baseImage.onload = () => {
+    // Resize canvas
+    canvas.width = w;
+    canvas.height = h;
+    
+    // Adjust all existing annotations
+    adjustAnnotationsAfterCrop(x, y);
+    
+    // Reset crop state
+    resetCropState();
+    
+    // Redraw everything
+    redraw();
+    
+    showToast("✅ Image cropped successfully", "success");
+  };
+  
+  // Remove controls
+  const controls = document.getElementById("crop-controls");
+  if (controls) controls.remove();
+}
+
+function adjustAnnotationsAfterCrop(offsetX, offsetY) {
+  // Adjust all annotation coordinates relative to new crop
+  for (let i = 0; i < history.length; i++) {
+    const layer = history[i];
+    if (! layer) continue;
+    
+    switch (layer.type) {
+      case "arrow":
+      case "line":
+        layer. x1 -= offsetX;
+        layer.y1 -= offsetY;
+        layer.x2 -= offsetX;
+        layer.y2 -= offsetY;
+        break;
+      case "rectangle":
+      case "blur":
+        layer.x -= offsetX;
+        layer.y -= offsetY;
+        break;
+      case "circle":
+      case "step":
+      case "text":
+        layer. x -= offsetX;
+        layer.y -= offsetY;
+        break;
+      case "draw":
+      case "highlight":
+        if (layer.path) {
+          layer.path = layer.path.map(p => ({
+            x: p.x - offsetX,
+            y: p.y - offsetY
+          }));
+        }
+        break;
+    }
+  }
+  
+  // Remove annotations that are completely outside the crop area
+  history = history.filter((layer, index) => {
+    if (index > historyIndex) return true;
+    return isLayerVisible(layer, canvas.width, canvas.height);
+  });
+  
+  historyIndex = Math.min(historyIndex, history.length - 1);
+}
+
+function isLayerVisible(layer, width, height) {
+  // Simple visibility check - can be enhanced
+  switch (layer.type) {
+    case "arrow":
+    case "line":
+      return (layer.x1 >= 0 && layer.x1 <= width) || 
+             (layer.x2 >= 0 && layer. x2 <= width);
+    case "rectangle":
+    case "blur":
+      return layer.x < width && layer.y < height && 
+             (layer.x + layer.w) > 0 && (layer. y + layer.h) > 0;
+    default:
+      return true; // Keep by default
+  }
+}
+
+function cancelCrop() {
+  resetCropState();
+  redraw();
+  
+  const controls = document.getElementById("crop-controls");
+  if (controls) controls.remove();
+  
+  showToast("Crop cancelled", "info");
+}
+
+function resetCropState() {
+  cropState = {
+    active: false,
+    startX: 0,
+    startY: 0,
+    endX: 0,
+    endY: 0,
+    isDragging: false
+  };
+}
 
 function drawArrow({ x1, y1, x2, y2, color, width }) {
   const angle = Math.atan2(y2 - y1, x2 - x1);

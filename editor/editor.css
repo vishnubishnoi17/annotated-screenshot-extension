@@ -16,16 +16,16 @@ body {
 
 /* Toolbar */
 .toolbar {
-  position: sticky;
+  position: sticky;  /* Keep this as sticky so it stays at top when scrolling */
   top: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:  linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 12px 20px;
   display: flex;
   gap: 20px;
-  align-items:  center;
+  align-items: center;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   flex-wrap: wrap;
-  z-index: 100;
+  z-index: 100;  /* Ensures toolbar stays on top */
 }
 
 .toolbar-section {
@@ -201,18 +201,17 @@ body {
   background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
 }
 
-/* Canvas Container - FIXED */
+
 .canvas-container {
   flex: 1;
-  display:  flex;
+  display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 20px;
+  align-items: flex-start; /* Change from center to flex-start */
+  padding:  20px;
+  padding-top: 20px; /* Consistent padding on all sides */
   overflow: auto;
   background: 
-    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
-    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
-  background-size: 20px 20px;
+    repeating-linear-gradient(45deg, #1a1a2e, #1a1a2e 10px, #16213e 10px, #16213e 20px);
 }
 
 canvas {
@@ -231,7 +230,99 @@ canvas.select-mode {
 canvas.text-mode {
   cursor: text;
 }
+/* ========================================
+   CROP TOOL STYLES
+======================================== */
 
+/* Crop cursor */
+.canvas-container.crop-mode {
+  cursor: crosshair ! important;
+}
+
+canvas.crop-mode {
+  cursor: crosshair !important;
+}
+
+/* Crop controls panel (appears at bottom when cropping) */
+.crop-controls {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform:  translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 15px 30px;
+  border-radius:  12px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  z-index: 200;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.crop-controls button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crop-controls .apply-crop {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.crop-controls .apply-crop:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.crop-controls .cancel-crop {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.crop-controls .cancel-crop:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.crop-controls button:active {
+  transform: translateY(0);
+}
+
+/* Instruction text in crop controls */
+.crop-controls::before {
+  content: "Select crop area: ";
+  color: #fff;
+  font-size: 13px;
+  font-weight:  500;
+  margin-right: 10px;
+  opacity: 0.8;
+}
 /* Text Modal */
 .text-modal {
   position: fixed;

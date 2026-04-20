@@ -1,125 +1,64 @@
-// Elements
-const captureFull = document.getElementById('capture-full');
-const captureVisible = document.getElementById('capture-visible');
-const statusDiv = document.getElementById('status');
-const loadingOverlay = document.getElementById('loading');
-const progressFill = document.getElementById('progress-fill');
-const progressText = document.getElementById('progress-text');
+import { MESSAGE } from '../utils/constants.js';
 
-// Settings
-const autoOpenCheck = document.getElementById('auto-open');
-const playSoundCheck = document.getElementById('play-sound');
-const captureDelaySelect = document.getElementById('capture-delay');
+const historyList = document.getElementById('history');
+const status = document.getElementById('status');
 
-// Load settings
-chrome.storage.sync.get(['autoOpen', 'playSound', 'captureDelay'], (result) => {
-  autoOpenCheck.checked = result.autoOpen !== false;
-  playSoundCheck.checked = result.playSound !== false;
-  captureDelaySelect.value = result.captureDelay || '500';
-});
+const showStatus = (text, error = false) => {
+  status.textContent = text;
+  status.style.color = error ? '#dc2626' : '#1d4ed8';
+};
 
-// Save settings
-autoOpenCheck.addEventListener('change', (e) => {
-  chrome.storage.sync.set({ autoOpen: e.target.checked });
-});
+async function capture(captureType) {
+  const delayMs = Number(document.getElementById('delayMs').value) || 0;
+  showStatus('Capturing...');
 
-playSoundCheck.addEventListener('change', (e) => {
-  chrome.storage.sync. set({ playSound: e.target.checked });
-});
+  const response = await chrome.runtime.sendMessage({
+    action: MESSAGE.CAPTURE,
+    captureType,
+    delayMs
+  });
 
-captureDelaySelect.addEventListener('change', (e) => {
-  chrome.storage.sync.set({ captureDelay: e.target. value });
-});
-
-// Capture Full Page
-captureFull.addEventListener('click', async () => {
-  showLoading();
-  
-  chrome.runtime.sendMessage({ action: "CAPTURE_FULL_PAGE" });
-  
-  // Simulate progress (real progress would need messaging from background)
-  simulateProgress();
-  
-  setTimeout(() => {
-    window.close();
-  }, 1000);
-});
-
-// Capture Visible
-captureVisible.addEventListener('click', async () => {
-  showStatus('Capturing visible area... ', 'info');
-  
-  chrome.runtime.sendMessage({ action: "CAPTURE_VISIBLE" });
-  
-  setTimeout(() => {
-    window.close();
-  }, 500);
-});
-
-// Help
-document.getElementById('help').addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://github.com/vishnubishnoi17/annotated-screenshot-extension' });
-});
-
-// Shortcuts
-document.getElementById('shortcuts').addEventListener('click', () => {
-  showShortcutsModal();
-});
-
-// Functions
-function showLoading() {
-  loadingOverlay.classList. remove('hidden');
-}
-
-function hideLoading() {
-  loadingOverlay.classList. add('hidden');
-}
-
-function simulateProgress() {
-  let progress = 0;
-  const interval = setInterval(() => {
-    progress += 10;
-    progressFill.style.width = progress + '%';
-    progressText.textContent = progress + '%';
-    
-    if (progress >= 100) {
-      clearInterval(interval);
-    }
-  }, 100);
-}
-
-function showStatus(message, type = 'info') {
-  statusDiv.textContent = message;
-  statusDiv.className = `status ${type}`;
-  
-  setTimeout(() => {
-    statusDiv. textContent = '';
-    statusDiv. className = 'status';
-  }, 3000);
-}
-
-function showShortcutsModal() {
-  const shortcuts = `
-    KEYBOARD SHORTCUTS:
-    
-    Capture Screenshot: Ctrl+Shift+S (Cmd+Shift+S on Mac)
-    
-    EDITOR: 
-    Undo: Ctrl+Z (Cmd+Z)
-    Redo: Ctrl+Y (Cmd+Y)
-    Delete Selected:  Delete/Backspace
-    Select Tool: 1-8 (number keys)
-    Zoom In: Ctrl++ (Cmd++)
-    Zoom Out: Ctrl+- (Cmd+-)
-    Reset Zoom: Ctrl+0 (Cmd+0)
-  `;
-  alert(shortcuts);
-}
-
-// Listen for errors
-chrome.runtime.onMessage. addListener((msg) => {
-  if (msg. action === 'CAPTURE_ERROR') {
-    hideLoading();
-    showStatus(msg.error, 'error');
+  if (!response?.ok) {
+    showStatus(response?.error || 'Capture failed', true);
+    return;
   }
+
+  showStatus('Capture complete. Editor opened.');
+  setTimeout(() => window.close(), 350);
+}
+
+function historyItemTemplate(item) {
+  const li = document.createElement('li');
+  li.className = 'history-item';
+  li.innerHTML = `
+    <img alt="capture preview" src="${item.imageDataUrl}" />
+    <div>
+      <div><strong>${item.meta?.captureType || item.type || 'capture'}</strong></div>
+      <div style="font-size:11px;color:#64748b">${new Date(item.createdAt).toLocaleString()}</div>
+    </div>
+  `;
+
+  li.addEventListener('click', async () => {
+    await chrome.runtime.sendMessage({ action: MESSAGE.OPEN_EDITOR, captureId: item.id });
+    window.close();
+  });
+
+  return li;
+}
+
+async function loadHistory() {
+  const response = await chrome.runtime.sendMessage({ action: MESSAGE.GET_HISTORY });
+  if (!response?.ok) {
+    showStatus('Failed to load history', true);
+    return;
+  }
+
+  historyList.innerHTML = '';
+  response.captures.forEach((item) => historyList.appendChild(historyItemTemplate(item)));
+}
+
+document.querySelectorAll('[data-capture]').forEach((button) => {
+  button.addEventListener('click', () => capture(button.dataset.capture));
 });
+
+loadHistory();

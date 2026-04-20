@@ -1,1219 +1,484 @@
-/* ========================================
-   CANVAS & GLOBAL STATE
-======================================== */
+import { AnnotationEngine } from '../annotation/annotationEngine.js';
+import { drawAnnotation, drawSelection } from '../annotation/renderer.js';
+import { getCapture, listCaptures, updateCapture } from '../storage/indexedDb.js';
+import { getAnnotationSuggestions } from '../ui/aiSuggestions.js';
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-let tool = "select";
-let currentColor = "#ff0000";
-let lineWidth = 3;
-let stepCount = 1;
-let zoom = 1;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const engine = new AnnotationEngine();
 
 let baseImage = null;
-let history = [];
-let historyIndex = -1;
+let activeCapture = null;
+let tool = 'select';
+let color = '#ef4444';
+let width = 3;
 
-let startX = 0;
-let startY = 0;
-let isDrawing = false;
-let currentPath = [];
+let pointer = { down: false, startX: 0, startY: 0 };
+let draft = null;
+let interaction = { mode: null, handle: null, startX: 0, startY: 0 };
 
-let textPosition = null;
-let cropState = {
-  active: false,
-  startX:  0,
-  startY:  0,
-  endX: 0,
-  endY: 0,
-  isDragging: false
-};
+const toastEl = document.getElementById('toast');
+const textModal = document.getElementById('textModal');
+const textInput = document.getElementById('textInput');
+const textSize = document.getElementById('textSize');
+let pendingTextPoint = null;
 
-/* ========================================
-   INITIALIZATION
-======================================== */
-
-document.addEventListener('DOMContentLoaded',init);
-
-async function init() {
-  setupToolbar();
-  setupCanvas();
-  setupKeyboardShortcuts();
-  await loadScreenshot();
+function toast(message) {
+  toastEl.textContent = message;
+  toastEl.classList.add('visible');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => toastEl.classList.remove('visible'), 1800);
 }
 
-/* ========================================
-   TOOLBAR SETUP
-======================================== */
-
-function setupToolbar() {
-  // Tool selection
-  document.querySelectorAll("[data-tool]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("[data-tool]").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      tool = btn.dataset.tool;
-      updateCursor();
-    });
-  });
-
-  // Color picker
-  const colorPicker = document.getElementById("color-picker");
-  colorPicker.addEventListener("change", (e) => {
-    currentColor = e.target.value;
-  });
-
-  // Color presets
-  document.querySelectorAll(".color-preset").forEach(btn => {
-    btn.addEventListener("click", () => {
-      currentColor = btn.dataset.color;
-      colorPicker.value = currentColor;
-    });
-  });
-
-  // Line width
-  const lineWidthInput = document.getElementById("line-width");
-  const widthValue = document.getElementById("width-value");
-  lineWidthInput.addEventListener("input", (e) => {
-    lineWidth = parseInt(e.target.value);
-    widthValue.textContent = lineWidth;
-  });
-
-  // History
-  document.getElementById("undo").addEventListener("click", undo);
-  document.getElementById("redo").addEventListener("click", redo);
-  document.getElementById("clear").addEventListener("click", clearAll);
-
-  // Zoom
-  document.getElementById("zoom-in").addEventListener("click", () => changeZoom(0.1));
-  document.getElementById("zoom-out").addEventListener("click", () => changeZoom(-0.1));
-  document.getElementById("zoom-reset").addEventListener("click", resetZoom);
-
-  // Export
-  document.getElementById("png").addEventListener("click", exportPNG);
-  document.getElementById("pdf").addEventListener("click", exportPDF);
-  document.getElementById("clip").addEventListener("click", copyToClipboard);
+function getCaptureIdFromUrl() {
+  const url = new URL(location.href);
+  return url.searchParams.get('captureId');
 }
 
-/* ========================================
-   CANVAS SETUP
-======================================== */
+async function loadCapture(captureId) {
+  const fallback = (await chrome.storage.local.get('latestCaptureId'))?.latestCaptureId;
+  const id = captureId || fallback;
 
-function setupCanvas() {
-  canvas.addEventListener("mousedown", handleMouseDown);
-  canvas.addEventListener("mousemove", handleMouseMove);
-  canvas.addEventListener("mouseup", handleMouseUp);
-  canvas.addEventListener("wheel", handleWheel, { passive: false });
-}
-
-function updateCursor() {
-  canvas.className = '';
-  if (tool === "select") canvas.classList.add("select-mode");
-  if (tool === "text") canvas.classList.add("text-mode");
-  if (tool === "crop") canvas.classList.add("crop-mode"); // ADD THIS LINE
-}
-
-/* ========================================
-   GET MOUSE COORDINATES - FIXED
-======================================== */
-
-function getMousePos(e) {
-  const rect = canvas.getBoundingClientRect();
-  
-  // Account for canvas scale (CSS vs actual size)
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect. height;
-  
-  return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY
-  };
-}
-
-/* ========================================
-   LOAD SCREENSHOT
-======================================== */
-
-async function loadScreenshot() {
-  try {
-    const { screenshots, meta } = await chrome.storage.local.get(["screenshots", "meta"]);
-    
-    if (! screenshots || !meta) {
-      showToast("No screenshot data found", "error");
-      return;
-    }
-
-    canvas.width = meta.width || meta.viewportWidth;
-    canvas.height = meta.height || meta.totalHeight || meta.viewportHeight;
-
-    baseImage = new Image();
-    baseImage.src = await stitchScreenshots(screenshots, meta);
-    await baseImage.decode();
-
-    redraw();
-    showToast(`Screenshot loaded:  ${canvas.width}×${canvas.height}px`, "success");
-  } catch (error) {
-    console.error("Failed to load screenshot:", error);
-    showToast("Failed to load screenshot", "error");
-  }
-}
-
-async function stitchScreenshots(images, meta) {
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = meta.width || meta.viewportWidth;
-  tempCanvas.height = meta.height || meta.totalHeight || meta.viewportHeight;
-  const tempCtx = tempCanvas.getContext("2d");
-
-  let y = 0;
-  for (const src of images) {
-    const img = new Image();
-    img.src = src;
-    await img.decode();
-    tempCtx.drawImage(img, 0, y);
-    y += meta.viewportHeight;
-  }
-
-  return tempCanvas.toDataURL("image/png");
-}
-
-/* ========================================
-   MOUSE EVENTS - FIXED
-======================================== */
-
-function handleMouseDown(e) {
-  const pos = getMousePos(e);
-  startX = pos.x;
-  startY = pos.y;
-
-  if (tool === "crop") {
-    cropState.active = true;
-    cropState.isDragging = true;
-    cropState.startX = startX;
-    cropState.startY = startY;
-    cropState.endX = startX;
-    cropState.endY = startY;
+  if (!id) {
+    toast('No capture found');
     return;
   }
 
-  if (tool === "text") {
-    showTextModal(startX, startY);
+  const capture = await getCapture(id);
+  if (!capture) {
+    toast('Capture not found in IndexedDB');
     return;
   }
 
-  if (tool === "draw" || tool === "highlight") {
-    isDrawing = true;
-    currentPath = [{ x: startX, y: startY }];
-  }
+  activeCapture = capture;
+  engine.load(capture.annotations || []);
+
+  const image = new Image();
+  image.src = capture.imageDataUrl;
+  await image.decode();
+  baseImage = image;
+
+  canvas.width = image.width;
+  canvas.height = image.height;
+  render();
+  await renderHistoryList();
 }
 
-function handleMouseMove(e) {
-  if (cropState.isDragging && tool === "crop") {
-    const pos = getMousePos(e);
-    cropState.endX = pos.x;
-    cropState.endY = pos.y;
-    redraw();
-    drawCropPreview();
-    return;
-  }
-
-  if (! isDrawing) return;
-
-  const pos = getMousePos(e);
-
-  if (tool === "draw" || tool === "highlight") {
-    currentPath.push({ x: pos.x, y: pos.y });
-    redraw();
-    
-    // Preview current path
-    if (tool === "draw") {
-      drawPath({ path: currentPath, color: currentColor, width: lineWidth });
-    } else {
-      drawHighlight({ path: currentPath, color: currentColor, width: lineWidth * 3 });
-    }
-  }
-}
-
-function handleMouseUp(e) {
-  if (tool === "crop" && cropState.isDragging) {
-    cropState.isDragging = false;
-    const pos = getMousePos(e);
-    cropState.endX = pos.x;
-    cropState.endY = pos.y;
-    
-    // Only show controls if area is meaningful (at least 10px)
-    const width = Math.abs(cropState. endX - cropState.startX);
-    const height = Math. abs(cropState.endY - cropState.startY);
-    
-    if (width > 10 && height > 10) {
-      showCropControls();
-    } else {
-      cancelCrop();
-    }
-    return;
-  }
-  if (!isDrawing && tool === "select") return;
-
-  const pos = getMousePos(e);
-  const endX = pos.x;
-  const endY = pos.y;
-
-  let layer = null;
-
-  // Create layer based on tool
-  switch (tool) {
-    case "arrow":
-      layer = { type: "arrow", x1: startX, y1: startY, x2: endX, y2: endY, color: currentColor, width: lineWidth };
-      break;
-    case "line":
-      layer = { type:  "line", x1: startX, y1: startY, x2: endX, y2: endY, color: currentColor, width: lineWidth };
-      break;
-    case "rectangle": 
-      layer = { 
-        type: "rectangle", 
-        x:  Math.min(startX, endX), 
-        y: Math.min(startY, endY), 
-        w: Math.abs(endX - startX), 
-        h: Math.abs(endY - startY),
-        color: currentColor,
-        width: lineWidth
-      };
-      break;
-    case "circle":
-      const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-      layer = { type: "circle", x: startX, y: startY, radius, color: currentColor, width: lineWidth };
-      break;
-    case "step":
-      layer = { type:  "step", x: endX, y: endY, n: stepCount++, color: currentColor };
-      break;
-    case "blur":
-      layer = {
-        type: "blur",
-        x: Math.min(startX, endX),
-        y: Math.min(startY, endY),
-        w: Math.abs(endX - startX),
-        h: Math.abs(endY - startY)
-      };
-      break;
-    case "draw":
-      if (currentPath.length > 1) {
-        layer = { type: "draw", path: [... currentPath], color: currentColor, width: lineWidth };
-      }
-      break;
-    case "highlight":
-      if (currentPath.length > 1) {
-        layer = { type: "highlight", path: [...currentPath], color: currentColor, width: lineWidth * 3 };
-      }
-      break;
-  }
-
-  if (layer) {
-    commit(layer);
-  }
-
-  isDrawing = false;
-  currentPath = [];
-}
-
-function handleWheel(e) {
-  if (e.ctrlKey) {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    changeZoom(delta);
-  }
-}
-
-/* ========================================
-   HISTORY MANAGEMENT
-======================================== */
-
-function commit(layer) {
-  history = history.slice(0, historyIndex + 1);
-  history.push(layer);
-  historyIndex++;
-  redraw();
-  updateHistoryButtons();
-}
-
-function undo() {
-  if (historyIndex >= 0) {
-    historyIndex--;
-    redraw();
-    updateHistoryButtons();
-    showToast("Undo", "info");
-  }
-}
-
-function redo() {
-  if (historyIndex < history.length - 1) {
-    historyIndex++;
-    redraw();
-    updateHistoryButtons();
-    showToast("Redo", "info");
-  }
-}
-
-function clearAll() {
-  if (confirm("Clear all annotations?")) {
-    history = [];
-    historyIndex = -1;
-    stepCount = 1;
-    redraw();
-    updateHistoryButtons();
-    showToast("All annotations cleared", "info");
-  }
-}
-
-function updateHistoryButtons() {
-  document.getElementById("undo").disabled = historyIndex < 0;
-  document.getElementById("redo").disabled = historyIndex >= history.length - 1;
-}
-
-/* ========================================
-   RENDERING
-======================================== */
-
-function redraw() {
+function render() {
   if (!baseImage) return;
-
-  ctx.save();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(baseImage, 0, 0);
 
-  for (let i = 0; i <= historyIndex; i++) {
-    drawLayer(history[i]);
+  const all = engine.getAll();
+  all.forEach((item) => drawAnnotation(ctx, baseImage, item));
+
+  if (draft) {
+    drawAnnotation(ctx, baseImage, draft);
   }
-  
-  ctx.restore();
-}
 
-function drawLayer(layer) {
-  if (!layer) return;
-
-  switch (layer.type) {
-    case "arrow":  drawArrow(layer); break;
-    case "line": drawLine(layer); break;
-    case "rectangle": drawRectangle(layer); break;
-    case "circle": drawCircle(layer); break;
-    case "text": drawText(layer); break;
-    case "draw": drawPath(layer); break;
-    case "highlight": drawHighlight(layer); break;
-    case "step": drawStep(layer); break;
-    case "blur": drawBlur(layer); break;
+  const selected = engine.getSelected();
+  if (selected) {
+    drawSelection(ctx, engine.getBounds(selected));
   }
 }
 
-/* ========================================
-   DRAWING FUNCTIONS
-======================================== */
-
-
-/* ========================================
-   CROP TOOL FUNCTIONS
-======================================== */
-
-function drawCropPreview() {
-  if (! cropState.active) return;
-  
-  const x = Math.min(cropState.startX, cropState.endX);
-  const y = Math.min(cropState.startY, cropState.endY);
-  const w = Math.abs(cropState. endX - cropState.startX);
-  const h = Math.abs(cropState.endY - cropState.startY);
-  
-  // Draw darkened overlay outside crop area
-  ctx.save();
-  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-  
-  // Top
-  ctx.fillRect(0, 0, canvas.width, y);
-  // Bottom
-  ctx.fillRect(0, y + h, canvas.width, canvas.height - (y + h));
-  // Left
-  ctx.fillRect(0, y, x, h);
-  // Right
-  ctx.fillRect(x + w, y, canvas.width - (x + w), h);
-  
-  // Draw crop selection border
-  ctx.strokeStyle = "#00ff00";
-  ctx. lineWidth = 2;
-  ctx.setLineDash([5, 5]);
-  ctx.strokeRect(x, y, w, h);
-  ctx.setLineDash([]);
-  
-  // Draw corner handles
-  const handleSize = 10;
-  ctx.fillStyle = "#00ff00";
-  
-  // Top-left
-  ctx.fillRect(x - handleSize/2, y - handleSize/2, handleSize, handleSize);
-  // Top-right
-  ctx.fillRect(x + w - handleSize/2, y - handleSize/2, handleSize, handleSize);
-  // Bottom-left
-  ctx.fillRect(x - handleSize/2, y + h - handleSize/2, handleSize, handleSize);
-  // Bottom-right
-  ctx.fillRect(x + w - handleSize/2, y + h - handleSize/2, handleSize, handleSize);
-  
-  // Show dimensions
-  ctx.fillStyle = "#00ff00";
-  ctx.font = "bold 14px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText(`${Math.round(w)} × ${Math.round(h)}`, x + w/2, y - 10);
-  
-  ctx.restore();
+async function persistAnnotations() {
+  if (!activeCapture) return;
+  const next = await updateCapture(activeCapture.id, { annotations: engine.getAll() });
+  if (next) activeCapture = next;
 }
 
-function showCropControls() {
-  // Remove existing controls if any
-  const existing = document.getElementById("crop-controls");
-  if (existing) existing.remove();
-  
-  const controls = document.createElement("div");
-  controls.id = "crop-controls";
-  controls.className = "crop-controls";
-  controls.innerHTML = `
-    <button class="apply-crop">✓ Apply Crop</button>
-    <button class="cancel-crop">✕ Cancel</button>
-  `;
-  
-  document.body.appendChild(controls);
-  
-  controls.querySelector(".apply-crop").addEventListener("click", applyCrop);
-  controls.querySelector(".cancel-crop").addEventListener("click", cancelCrop);
+function setTool(nextTool) {
+  tool = nextTool;
+  document.getElementById('activeToolLabel').textContent = nextTool;
+  document.querySelectorAll('[data-tool]').forEach((el) => el.classList.toggle('active', el.dataset.tool === nextTool));
 }
 
-function applyCrop() {
-  const x = Math.min(cropState.startX, cropState. endX);
-  const y = Math.min(cropState.startY, cropState.endY);
-  const w = Math.abs(cropState.endX - cropState.startX);
-  const h = Math.abs(cropState.endY - cropState.startY);
-  
-  // Create new cropped image
-  const croppedCanvas = document.createElement("canvas");
-  croppedCanvas.width = w;
-  croppedCanvas. height = h;
-  const croppedCtx = croppedCanvas.getContext("2d");
-  
-  // Draw base image cropped
-  croppedCtx.drawImage(baseImage, x, y, w, h, 0, 0, w, h);
-  
-  // Update base image
-  baseImage = new Image();
-  baseImage.src = croppedCanvas.toDataURL();
-  baseImage.onload = () => {
-    // Resize canvas
-    canvas.width = w;
-    canvas.height = h;
-    
-    // Adjust all existing annotations
-    adjustAnnotationsAfterCrop(x, y);
-    
-    // Reset crop state
-    resetCropState();
-    
-    // Redraw everything
-    redraw();
-    
-    showToast("✅ Image cropped successfully", "success");
-  };
-  
-  // Remove controls
-  const controls = document.getElementById("crop-controls");
-  if (controls) controls.remove();
-}
-
-function adjustAnnotationsAfterCrop(offsetX, offsetY) {
-  // Adjust all annotation coordinates relative to new crop
-  for (let i = 0; i < history.length; i++) {
-    const layer = history[i];
-    if (! layer) continue;
-    
-    switch (layer.type) {
-      case "arrow":
-      case "line":
-        layer. x1 -= offsetX;
-        layer.y1 -= offsetY;
-        layer.x2 -= offsetX;
-        layer.y2 -= offsetY;
-        break;
-      case "rectangle":
-      case "blur":
-        layer.x -= offsetX;
-        layer.y -= offsetY;
-        break;
-      case "circle":
-      case "step":
-      case "text":
-        layer. x -= offsetX;
-        layer.y -= offsetY;
-        break;
-      case "draw":
-      case "highlight":
-        if (layer.path) {
-          layer.path = layer.path.map(p => ({
-            x: p.x - offsetX,
-            y: p.y - offsetY
-          }));
-        }
-        break;
-    }
-  }
-  
-  // Remove annotations that are completely outside the crop area
-  history = history.filter((layer, index) => {
-    if (index > historyIndex) return true;
-    return isLayerVisible(layer, canvas.width, canvas.height);
-  });
-  
-  historyIndex = Math.min(historyIndex, history.length - 1);
-}
-
-function isLayerVisible(layer, width, height) {
-  // Simple visibility check - can be enhanced
-  switch (layer.type) {
-    case "arrow":
-    case "line":
-      return (layer.x1 >= 0 && layer.x1 <= width) || 
-             (layer.x2 >= 0 && layer. x2 <= width);
-    case "rectangle":
-    case "blur":
-      return layer.x < width && layer.y < height && 
-             (layer.x + layer.w) > 0 && (layer. y + layer.h) > 0;
-    default:
-      return true; // Keep by default
-  }
-}
-
-function cancelCrop() {
-  resetCropState();
-  redraw();
-  
-  const controls = document.getElementById("crop-controls");
-  if (controls) controls.remove();
-  
-  showToast("Crop cancelled", "info");
-}
-
-function resetCropState() {
-  cropState = {
-    active: false,
-    startX: 0,
-    startY: 0,
-    endX: 0,
-    endY: 0,
-    isDragging: false
+function toCanvasPoint(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY
   };
 }
 
-function drawArrow({ x1, y1, x2, y2, color, width }) {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  const headLength = 15 + width * 2;
-
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = "round";
-
-  // Line
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-
-  // Arrowhead
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(
-    x2 - headLength * Math.cos(angle - Math.PI / 6),
-    y2 - headLength * Math.sin(angle - Math.PI / 6)
-  );
-  ctx.lineTo(
-    x2 - headLength * Math.cos(angle + Math.PI / 6),
-    y2 - headLength * Math.sin(angle + Math.PI / 6)
-  );
-  ctx.closePath();
-  ctx.fill();
+function startDraft(startX, startY) {
+  if (tool === 'arrow') {
+    return { type: 'arrow', x1: startX, y1: startY, x2: startX, y2: startY, color, width };
+  }
+  if (tool === 'rectangle') {
+    return { type: 'rectangle', x: startX, y: startY, w: 0, h: 0, color, width };
+  }
+  if (tool === 'ellipse') {
+    return { type: 'ellipse', x: startX, y: startY, w: 0, h: 0, color, width };
+  }
+  if (tool === 'blur') {
+    return { type: 'blur', x: startX, y: startY, w: 0, h: 0, color, width };
+  }
+  if (tool === 'highlight') {
+    return { type: 'highlight', x: startX, y: startY, w: 0, h: 0, color: '#facc15', width };
+  }
+  return null;
 }
 
-function drawLine({ x1, y1, x2, y2, color, width }) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = "round";
-
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-}
-
-function drawRectangle({ x, y, w, h, color, width }) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineJoin = "round";
-
-  ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.stroke();
-}
-
-function drawCircle({ x, y, radius, color, width }) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.stroke();
-}
-
-function drawText({ x, y, text, color, size, bold, italic }) {
-  ctx.fillStyle = color;
-  let font = "";
-  if (italic) font += "italic ";
-  if (bold) font += "bold ";
-  font += `${size}px Arial`;
-  ctx.font = font;
-  ctx.textBaseline = "top";
-  
-  // Text with background
-  const metrics = ctx.measureText(text);
-  const textHeight = size;
-  
-  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-  ctx.fillRect(x - 4, y - 4, metrics. width + 8, textHeight + 8);
-  
-  ctx.fillStyle = color;
-  ctx.fillText(text, x, y);
-}
-
-function drawPath({ path, color, width }) {
-  if (path.length < 2) return;
-
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-
-  ctx.beginPath();
-  ctx.moveTo(path[0].x, path[0].y);
-
-  for (let i = 1; i < path.length; i++) {
-    ctx.lineTo(path[i].x, path[i].y);
+function updateDraftShape(item, x, y) {
+  if (!item) return;
+  if (item.type === 'arrow') {
+    item.x2 = x;
+    item.y2 = y;
+    return;
   }
 
-  ctx.stroke();
+  item.x = Math.min(pointer.startX, x);
+  item.y = Math.min(pointer.startY, y);
+  item.w = Math.abs(x - pointer.startX);
+  item.h = Math.abs(y - pointer.startY);
 }
 
-function drawHighlight({ path, color, width }) {
-  if (path.length < 2) return;
+function onPointerDown(event) {
+  const point = toCanvasPoint(event);
+  pointer = { down: true, startX: point.x, startY: point.y };
 
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.globalAlpha = 0.3;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-
-  ctx.beginPath();
-  ctx.moveTo(path[0].x, path[0].y);
-
-  for (let i = 1; i < path.length; i++) {
-    ctx.lineTo(path[i].x, path[i].y);
+  if (tool === 'text') {
+    pendingTextPoint = point;
+    textModal.classList.remove('hidden');
+    textInput.value = '';
+    textInput.focus();
+    return;
   }
 
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawStep({ x, y, n, color }) {
-  const radius = 18;
-  
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math. PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "white";
-  ctx.font = "bold 16px Arial";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(n, x, y);
-}
-
-function drawBlur({ x, y, w, h }) {
-  ctx.save();
-  ctx.filter = "blur(10px)";
-  ctx.drawImage(baseImage, x, y, w, h, x, y, w, h);
-  ctx.filter = "none";
-  
-  // Border
-  ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([5, 5]);
-  ctx.strokeRect(x, y, w, h);
-  ctx.setLineDash([]);
-  ctx.restore();
-}
-
-/* ========================================
-   ZOOM CONTROLS
-======================================== */
-
-function changeZoom(delta) {
-  zoom = Math.max(0.5, Math.min(3, zoom + delta));
-  canvas.style.transform = `scale(${zoom})`;
-  document.getElementById("zoom-level").textContent = `${Math.round(zoom * 100)}%`;
-  showToast(`Zoom:  ${Math.round(zoom * 100)}%`, "info");
-}
-
-function resetZoom() {
-  zoom = 1;
-  canvas.style.transform = `scale(1)`;
-  document.getElementById("zoom-level").textContent = "100%";
-}
-
-/* ========================================
-   TEXT MODAL
-======================================== */
-
-function showTextModal(x, y) {
-  textPosition = { x, y };
-  const modal = document.getElementById("text-modal");
-  const textInput = document.getElementById("text-input");
-  
-  modal.classList.remove("hidden");
-  textInput.value = "";
-  textInput.focus();
-}
-
-document.getElementById("text-cancel").addEventListener("click", () => {
-  document.getElementById("text-modal").classList.add("hidden");
-  textPosition = null;
-});
-
-document.getElementById("text-ok").addEventListener("click", () => {
-  const text = document.getElementById("text-input").value.trim();
-  if (!text) return;
-  
-  const fontSize = parseInt(document.getElementById("font-size").value);
-  const bold = document.getElementById("text-bold").checked;
-  const italic = document.getElementById("text-italic").checked;
-  
-  const layer = {
-    type: "text",
-    x: textPosition. x,
-    y: textPosition.y,
-    text,
-    color: currentColor,
-    size:  fontSize,
-    bold,
-    italic
-  };
-  
-  commit(layer);
-  document.getElementById("text-modal").classList.add("hidden");
-  textPosition = null;
-});
-
-// Enter key to submit
-document.getElementById("text-input").addEventListener("keypress", (e) => {
-  if (e. key === "Enter") {
-    document.getElementById("text-ok").click();
-  }
-});
-
-/* ========================================
-   KEYBOARD SHORTCUTS
-======================================== */
-
-function setupKeyboardShortcuts() {
-  document.addEventListener("keydown", (e) => {
-    // Don't trigger shortcuts when typing in text input
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+  if (tool === 'select') {
+    const resizeHandle = engine.getResizeHandle(point.x, point.y);
+    if (resizeHandle) {
+      interaction = { mode: 'resize', handle: resizeHandle, startX: point.x, startY: point.y };
       return;
     }
 
-    // Undo/Redo
-    if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-      e.preventDefault();
-      undo();
+    const target = engine.hitTest(point.x, point.y);
+    if (target) {
+      engine.setSelected(target.id);
+      interaction = { mode: 'move', handle: null, startX: point.x, startY: point.y };
+    } else {
+      engine.clearSelection();
+      interaction = { mode: null, handle: null, startX: 0, startY: 0 };
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-      e.preventDefault();
-      redo();
-    }
-    
-    // Zoom
-    if ((e.ctrlKey || e.metaKey) && e.key === "=") {
-      e.preventDefault();
-      changeZoom(0.1);
-    }
-    if ((e. ctrlKey || e.metaKey) && e.key === "-") {
-      e.preventDefault();
-      changeZoom(-0.1);
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === "0") {
-      e.preventDefault();
-      resetZoom();
-    }
-    
-    // Tool shortcuts
-    const toolMap = {
-      'v': 'select',
-      'a': 'arrow',
-      'l': 'line',
-      'r': 'rectangle',
-      'c': 'circle',
-      't': 'text',
-      'd': 'draw',
-      'h': 'highlight',
-      'n': 'step',
-      'b': 'blur'
-    };
-    
-    if (toolMap[e.key.toLowerCase()] && !e.ctrlKey && !e.metaKey) {
-      const toolName = toolMap[e.key.toLowerCase()];
-      const toolBtn = document.querySelector(`[data-tool="${toolName}"]`);
-      if (toolBtn) toolBtn.click();
-    }
-  });
+
+    render();
+    return;
+  }
+
+  draft = startDraft(point.x, point.y);
 }
 
-/* ========================================
-   EXPORT FUNCTIONS - FIXED
-======================================== */
+function onPointerMove(event) {
+  if (!pointer.down) return;
 
-function createExportCanvas() {
-  const exportCanvas = document.createElement("canvas");
+  const point = toCanvasPoint(event);
+  if (tool === 'select' && interaction.mode) {
+    const dx = point.x - interaction.startX;
+    const dy = point.y - interaction.startY;
+
+    if (interaction.mode === 'move') {
+      engine.moveSelected(dx, dy);
+    }
+
+    if (interaction.mode === 'resize') {
+      engine.resizeSelected(interaction.handle, dx, dy);
+    }
+
+    interaction.startX = point.x;
+    interaction.startY = point.y;
+    render();
+    return;
+  }
+
+  updateDraftShape(draft, point.x, point.y);
+  render();
+}
+
+async function onPointerUp(event) {
+  if (!pointer.down) return;
+  pointer.down = false;
+
+  if (tool === 'select') {
+    interaction = { mode: null, handle: null, startX: 0, startY: 0 };
+    await persistAnnotations();
+    return;
+  }
+
+  if (!draft) return;
+
+  const point = toCanvasPoint(event);
+  updateDraftShape(draft, point.x, point.y);
+
+  const isTiny = draft.type !== 'arrow' && (draft.w < 4 || draft.h < 4);
+  if (!isTiny) {
+    engine.add(draft);
+    await persistAnnotations();
+  }
+
+  draft = null;
+  render();
+}
+
+async function exportCanvas(includeAnnotations = true, imageFormat = 'png') {
+  const exportCanvas = document.createElement('canvas');
   exportCanvas.width = canvas.width;
-  exportCanvas. height = canvas.height;
-  const exportCtx = exportCanvas.getContext("2d");
-  
-  // Draw base image
+  exportCanvas.height = canvas.height;
+  const exportCtx = exportCanvas.getContext('2d');
+
   exportCtx.drawImage(baseImage, 0, 0);
-  
-  // Save current context state
-  const savedCtx = ctx;
-  
-  // Temporarily use export context to draw all layers
-  window.tempCtx = exportCtx;
-  
-  // Draw all annotations using the same functions
-  for (let i = 0; i <= historyIndex; i++) {
-    const layer = history[i];
-    if (! layer) continue;
-    
-    // Draw each layer on export canvas
-    exportCtx.save();
-    
-    switch (layer.type) {
-      case "arrow": 
-        drawArrowOnContext(exportCtx, layer);
-        break;
-      case "line": 
-        drawLineOnContext(exportCtx, layer);
-        break;
-      case "rectangle":
-        drawRectangleOnContext(exportCtx, layer);
-        break;
-      case "circle":
-        drawCircleOnContext(exportCtx, layer);
-        break;
-      case "text":
-        drawTextOnContext(exportCtx, layer);
-        break;
-      case "draw":
-        drawPathOnContext(exportCtx, layer);
-        break;
-      case "highlight":
-        drawHighlightOnContext(exportCtx, layer);
-        break;
-      case "step":
-        drawStepOnContext(exportCtx, layer);
-        break;
-      case "blur":
-        drawBlurOnContext(exportCtx, baseImage, layer);
-        break;
-    }
-    
-    exportCtx.restore();
-  }
-  
-  return exportCanvas;
-}
-
-// Drawing functions for export context
-function drawArrowOnContext(context, { x1, y1, x2, y2, color, width }) {
-  const angle = Math.atan2(y2 - y1, x2 - x1);
-  const headLength = 15 + width * 2;
-
-  context.strokeStyle = color;
-  context.fillStyle = color;
-  context.lineWidth = width;
-  context.lineCap = "round";
-
-  context.beginPath();
-  context.moveTo(x1, y1);
-  context.lineTo(x2, y2);
-  context.stroke();
-
-  context.beginPath();
-  context.moveTo(x2, y2);
-  context.lineTo(
-    x2 - headLength * Math.cos(angle - Math. PI / 6),
-    y2 - headLength * Math.sin(angle - Math.PI / 6)
-  );
-  context.lineTo(
-    x2 - headLength * Math.cos(angle + Math.PI / 6),
-    y2 - headLength * Math.sin(angle + Math.PI / 6)
-  );
-  context.closePath();
-  context.fill();
-}
-
-function drawLineOnContext(context, { x1, y1, x2, y2, color, width }) {
-  context.strokeStyle = color;
-  context.lineWidth = width;
-  context.lineCap = "round";
-
-  context.beginPath();
-  context.moveTo(x1, y1);
-  context.lineTo(x2, y2);
-  context.stroke();
-}
-
-function drawRectangleOnContext(context, { x, y, w, h, color, width }) {
-  context.strokeStyle = color;
-  context.lineWidth = width;
-  context.lineJoin = "round";
-
-  context.beginPath();
-  context.rect(x, y, w, h);
-  context.stroke();
-}
-
-function drawCircleOnContext(context, { x, y, radius, color, width }) {
-  context.strokeStyle = color;
-  context.lineWidth = width;
-
-  context. beginPath();
-  context.arc(x, y, radius, 0, Math.PI * 2);
-  context.stroke();
-}
-
-function drawTextOnContext(context, { x, y, text, color, size, bold, italic }) {
-  context.fillStyle = color;
-  let font = "";
-  if (italic) font += "italic ";
-  if (bold) font += "bold ";
-  font += `${size}px Arial`;
-  context.font = font;
-  context.textBaseline = "top";
-  
-  const metrics = context.measureText(text);
-  const textHeight = size;
-  
-  context.fillStyle = "rgba(255, 255, 255, 0.8)";
-  context.fillRect(x - 4, y - 4, metrics.width + 8, textHeight + 8);
-  
-  context.fillStyle = color;
-  context.fillText(text, x, y);
-}
-
-function drawPathOnContext(context, { path, color, width }) {
-  if (path.length < 2) return;
-
-  context.strokeStyle = color;
-  context.lineWidth = width;
-  context.lineJoin = "round";
-  context.lineCap = "round";
-
-  context.beginPath();
-  context.moveTo(path[0].x, path[0].y);
-
-  for (let i = 1; i < path.length; i++) {
-    context.lineTo(path[i].x, path[i].y);
+  if (includeAnnotations) {
+    engine.getAll().forEach((item) => drawAnnotation(exportCtx, baseImage, item));
   }
 
-  context.stroke();
+  const mime = imageFormat === 'jpeg' ? 'image/jpeg' : 'image/png';
+  const blob = await new Promise((resolve) => exportCanvas.toBlob(resolve, mime, 0.95));
+  return { blob, mime };
 }
 
-function drawHighlightOnContext(context, { path, color, width }) {
-  if (path.length < 2) return;
+async function downloadImage() {
+  const include = document.getElementById('includeAnnotations').checked;
+  const format = document.getElementById('imageFormat').value;
+  const { blob } = await exportCanvas(include, format);
 
-  context.strokeStyle = color;
-  context.lineWidth = width;
-  context.globalAlpha = 0.3;
-  context.lineJoin = "round";
-  context.lineCap = "round";
-
-  context.beginPath();
-  context.moveTo(path[0].x, path[0]. y);
-
-  for (let i = 1; i < path. length; i++) {
-    context.lineTo(path[i]. x, path[i].y);
+  if (!blob) {
+    toast('Export failed');
+    return;
   }
 
-  context.stroke();
-  context.globalAlpha = 1.0;
-}
+  const url = URL.createObjectURL(blob);
+  const ext = format === 'jpeg' ? 'jpg' : 'png';
 
-function drawStepOnContext(context, { x, y, n, color }) {
-  const radius = 18;
-  
-  context.fillStyle = color;
-  context.beginPath();
-  context.arc(x, y, radius, 0, Math. PI * 2);
-  context.fill();
+  await chrome.downloads.download({
+    url,
+    filename: `screenshot-v2-${Date.now()}.${ext}`,
+    saveAs: true
+  });
 
-  context.fillStyle = "white";
-  context.font = "bold 16px Arial";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillText(n, x, y);
-}
-
-function drawBlurOnContext(context, image, { x, y, w, h }) {
-  context.filter = "blur(10px)";
-  context.drawImage(image, x, y, w, h, x, y, w, h);
-  context.filter = "none";
-  
-  context.strokeStyle = "rgba(255, 0, 0, 0.5)";
-  context.lineWidth = 2;
-  context.setLineDash([5, 5]);
-  context.strokeRect(x, y, w, h);
-  context.setLineDash([]);
-}
-
-async function exportPNG() {
-  try {
-    showToast("Generating PNG...", "info");
-    
-    const exportCanvas = createExportCanvas();
-    
-    // Convert to blob and download
-    exportCanvas.toBlob((blob) => {
-      if (! blob) {
-        showToast("❌ Failed to create PNG", "error");
-        return;
-      }
-      
-      const url = URL.createObjectURL(blob);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      
-      chrome.downloads.download({
-        url,
-        filename: `screenshot-${timestamp}.png`,
-        saveAs: true
-      }, (downloadId) => {
-        if (downloadId) {
-          showToast("✅ PNG downloaded successfully!", "success");
-        } else {
-          showToast("❌ Download failed", "error");
-        }
-        URL.revokeObjectURL(url);
-      });
-    }, "image/png", 1.0);
-    
-  } catch (error) {
-    console.error("PNG export failed:", error);
-    showToast(`❌ PNG export failed: ${error.message}`, "error");
-  }
-}
-
-async function exportPDF() {
-  try {
-    showToast("Generating PDF...", "info");
-    
-    const { jsPDF } = window.jspdf;
-    
-    if (! jsPDF) {
-      showToast("❌ PDF library not loaded", "error");
-      return;
-    }
-    
-    const exportCanvas = createExportCanvas();
-    const imgData = exportCanvas.toDataURL("image/png", 1.0);
-    
-    // Create PDF
-    const imgWidth = exportCanvas.width;
-    const imgHeight = exportCanvas.height;
-    
-    const pdf = new jsPDF({
-      orientation: imgWidth > imgHeight ? "landscape" : "portrait",
-      unit: "px",
-      format:  [imgWidth, imgHeight]
-    });
-    
-    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    pdf.save(`screenshot-${timestamp}.pdf`);
-    
-    showToast("✅ PDF downloaded successfully!", "success");
-    
-  } catch (error) {
-    console.error("PDF export failed:", error);
-    showToast(`❌ PDF export failed: ${error.message}`, "error");
-  }
+  URL.revokeObjectURL(url);
+  toast('Downloaded');
 }
 
 async function copyToClipboard() {
-  try {
-    showToast("Copying to clipboard.. .", "info");
-    
-    const exportCanvas = createExportCanvas();
-    
-    const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, "image/png", 1.0));
-    
-    if (! blob) {
-      showToast("❌ Failed to create image", "error");
-      return;
-    }
-    
-    await navigator.clipboard.write([
-      new ClipboardItem({ "image/png": blob })
-    ]);
-    
-    showToast("✅ Copied to clipboard!", "success");
-    
-  } catch (error) {
-    console.error("Clipboard copy failed:", error);
-    showToast(`❌ Failed to copy:  ${error.message}`, "error");
+  const include = document.getElementById('includeAnnotations').checked;
+  const { blob } = await exportCanvas(include, 'png');
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  toast('Copied to clipboard');
+}
+
+async function exportPdf() {
+  const include = document.getElementById('includeAnnotations').checked;
+  const { blob } = await exportCanvas(include, 'png');
+
+  if (!window.jspdf?.jsPDF) {
+    toast('jsPDF unavailable');
+    return;
   }
+
+  const dataUrl = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({
+    orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+    unit: 'px',
+    format: [canvas.width, canvas.height]
+  });
+
+  pdf.addImage(dataUrl, 'PNG', 0, 0, canvas.width, canvas.height);
+  pdf.save(`screenshot-v2-${Date.now()}.pdf`);
+  toast('PDF exported');
 }
 
-/* ========================================
-   TOAST NOTIFICATIONS
-======================================== */
+async function runOcr() {
+  toast('Loading OCR...');
 
-function showToast(message, type = "info") {
-  const container = document.getElementById("toast-container");
-  
-  const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-  
-  const iconMap = {
-    success: "✅",
-    error: "❌",
-    info: "ℹ️"
-  };
-  
-  toast.innerHTML = `
-    <span class="toast-icon">${iconMap[type] || "ℹ️"}</span>
-    <span class="toast-message">${message}</span>
-  `;
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateX(400px)";
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  if (!window.Tesseract) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  const { blob } = await exportCanvas(false, 'png');
+  const result = await window.Tesseract.recognize(blob, 'eng');
+  const text = result?.data?.text?.trim();
+  if (!text) {
+    toast('No OCR text found');
+    return;
+  }
+
+  await navigator.clipboard.writeText(text);
+  toast('OCR text copied to clipboard');
 }
 
-/* ========================================
-   INITIALIZATION
-======================================== */
+async function runAiSuggestions() {
+  const suggestions = await getAnnotationSuggestions({
+    title: activeCapture?.title,
+    meta: activeCapture?.meta,
+    annotationCount: engine.getAll().length
+  });
+  alert(`AI suggestions:\n\n${suggestions.map((s) => `• ${s}`).join('\n')}`);
+}
 
-console.log("✅ Screenshot Editor Loaded - v2.0");
-updateHistoryButtons();
+function setupToolbar() {
+  document.querySelectorAll('[data-tool]').forEach((button) => {
+    button.addEventListener('click', () => setTool(button.dataset.tool));
+  });
+
+  document.getElementById('color').addEventListener('input', (e) => {
+    color = e.target.value;
+  });
+
+  document.getElementById('width').addEventListener('input', (e) => {
+    width = Number(e.target.value) || 3;
+  });
+
+  document.getElementById('undo').addEventListener('click', async () => {
+    if (engine.undo()) {
+      render();
+      await persistAnnotations();
+    }
+  });
+
+  document.getElementById('redo').addEventListener('click', async () => {
+    if (engine.redo()) {
+      render();
+      await persistAnnotations();
+    }
+  });
+
+  document.getElementById('deleteSelected').addEventListener('click', async () => {
+    const selected = engine.getSelected();
+    if (!selected) return;
+    const next = engine.getAll().filter((item) => item.id !== selected.id);
+    engine.replaceAll(next);
+    engine.clearSelection();
+    render();
+    await persistAnnotations();
+  });
+
+  document.getElementById('download').addEventListener('click', downloadImage);
+  document.getElementById('copy').addEventListener('click', copyToClipboard);
+  document.getElementById('pdf').addEventListener('click', exportPdf);
+  document.getElementById('ocr').addEventListener('click', () => runOcr().catch((error) => toast(error.message)));
+  document.getElementById('aiSuggest').addEventListener('click', runAiSuggestions);
+}
+
+function setupKeyboard() {
+  document.addEventListener('keydown', async (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) {
+        if (engine.redo()) {
+          render();
+          await persistAnnotations();
+        }
+      } else if (engine.undo()) {
+        render();
+        await persistAnnotations();
+      }
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+      event.preventDefault();
+      if (engine.redo()) {
+        render();
+        await persistAnnotations();
+      }
+    }
+
+    const map = { v: 'select', a: 'arrow', r: 'rectangle', e: 'ellipse', t: 'text', b: 'blur', h: 'highlight' };
+    if (!event.ctrlKey && !event.metaKey && map[event.key.toLowerCase()]) {
+      setTool(map[event.key.toLowerCase()]);
+    }
+
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      const selected = engine.getSelected();
+      if (!selected) return;
+      const next = engine.getAll().filter((item) => item.id !== selected.id);
+      engine.replaceAll(next);
+      engine.clearSelection();
+      render();
+      await persistAnnotations();
+    }
+  });
+}
+
+function setupTextModal() {
+  document.getElementById('textCancel').addEventListener('click', () => {
+    textModal.classList.add('hidden');
+    pendingTextPoint = null;
+  });
+
+  document.getElementById('textApply').addEventListener('click', async () => {
+    if (!pendingTextPoint) return;
+    const value = textInput.value.trim();
+    if (!value) return;
+
+    engine.add({
+      type: 'text',
+      x: pendingTextPoint.x,
+      y: pendingTextPoint.y,
+      text: value,
+      color,
+      size: Number(textSize.value) || 20,
+      bold: false,
+      italic: false
+    });
+
+    textModal.classList.add('hidden');
+    pendingTextPoint = null;
+    render();
+    await persistAnnotations();
+  });
+}
+
+async function renderHistoryList() {
+  const captureHistory = await listCaptures(30);
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+
+  captureHistory.forEach((item) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <img src="${item.imageDataUrl}" alt="capture" />
+      <div>
+        <div><strong>${item.meta?.captureType || item.type}</strong></div>
+        <div style="font-size:11px;color:#94a3b8">${new Date(item.createdAt).toLocaleString()}</div>
+      </div>
+    `;
+
+    li.addEventListener('click', () => {
+      const url = new URL(location.href);
+      url.searchParams.set('captureId', item.id);
+      window.history.replaceState({}, '', url);
+      loadCapture(item.id);
+    });
+
+    list.appendChild(li);
+  });
+}
+
+function setupCanvasEvents() {
+  canvas.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+}
+
+(async function init() {
+  setupToolbar();
+  setupKeyboard();
+  setupTextModal();
+  setupCanvasEvents();
+  await loadCapture(getCaptureIdFromUrl());
+})();

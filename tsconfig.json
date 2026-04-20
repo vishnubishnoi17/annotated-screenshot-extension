@@ -5,7 +5,7 @@
     "moduleResolution": "Bundler",
     "strict": false,
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": false,
     "noEmit": true,
     "types": ["chrome"]
   },

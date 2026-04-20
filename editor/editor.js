@@ -444,11 +444,11 @@ function setupTextModal() {
 }
 
 async function renderHistoryList() {
-  const history = await listCaptures(30);
+  const captureHistory = await listCaptures(30);
   const list = document.getElementById('historyList');
   list.innerHTML = '';
 
-  history.forEach((item) => {
+  captureHistory.forEach((item) => {
     const li = document.createElement('li');
     li.innerHTML = `
       <img src="${item.imageDataUrl}" alt="capture" />
@@ -461,7 +461,7 @@ async function renderHistoryList() {
     li.addEventListener('click', () => {
       const url = new URL(location.href);
       url.searchParams.set('captureId', item.id);
-      history.replaceState({}, '', url);
+      window.history.replaceState({}, '', url);
       loadCapture(item.id);
     });
 

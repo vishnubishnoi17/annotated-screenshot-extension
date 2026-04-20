@@ -13,7 +13,17 @@ export default [
         createImageBitmap: 'readonly',
         FileReader: 'readonly',
         ClipboardItem: 'readonly',
-        alert: 'readonly'
+        alert: 'readonly',
+        console: 'readonly',
+        document: 'readonly',
+        window: 'readonly',
+        navigator: 'readonly',
+        URL: 'readonly',
+        Image: 'readonly',
+        location: 'readonly',
+        fetch: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly'
       }
     },
     rules: {

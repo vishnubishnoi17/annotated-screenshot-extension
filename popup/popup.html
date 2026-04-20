@@ -1,90 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro Screenshot Annotator</title>
-  <link rel="stylesheet" href="popup.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Screenshot Pro v2.0</title>
+  <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <div class="popup-container">
-    <!-- Header -->
-    <div class="header">
-      <div class="logo">
-        <span class="logo-icon">📸</span>
-        <h1>Screenshot Pro</h1>
-      </div>
-      <div class="version">v1.0.0</div>
-    </div>
+  <main class="popup">
+    <header class="header">
+      <h1>Screenshot Pro</h1>
+      <span class="badge">v2.0</span>
+    </header>
 
-    <!-- Main Actions -->
-    <div class="actions">
-      <button id="capture-full" class="action-btn primary">
-        <span class="icon">🖼️</span>
-        <div class="btn-content">
-          <div class="btn-title">Full Page</div>
-          <div class="btn-subtitle">Capture entire page</div>
-        </div>
-        <span class="shortcut">Ctrl+Shift+S</span>
-      </button>
+    <section class="capture-actions">
+      <button data-capture="fullpage">📸 Full page</button>
+      <button data-capture="visible">👁️ Visible</button>
+      <button data-capture="region">✂️ Region</button>
+    </section>
 
-      <button id="capture-visible" class="action-btn secondary">
-        <span class="icon">👁️</span>
-        <div class="btn-content">
-          <div class="btn-title">Visible Area</div>
-          <div class="btn-subtitle">Current viewport only</div>
-        </div>
-      </button>
-    </div>
+    <section class="settings">
+      <label>Delay
+        <select id="delayMs">
+          <option value="0">No delay</option>
+          <option value="300" selected>0.3s</option>
+          <option value="1000">1s</option>
+          <option value="3000">3s</option>
+        </select>
+      </label>
+      <small>Shortcut: Ctrl/Cmd+Shift+S (full page), Ctrl/Cmd+Shift+R (region)</small>
+    </section>
 
-    <!-- Status -->
-    <div id="status" class="status"></div>
+    <section>
+      <h2>Recent captures</h2>
+      <ul id="history" class="history"></ul>
+    </section>
 
-    <!-- Quick Settings -->
-    <div class="quick-settings">
-      <div class="setting-row">
-        <label>
-          <input type="checkbox" id="auto-open">
-          <span>Auto-open editor</span>
-        </label>
-      </div>
-      <div class="setting-row">
-        <label>
-          <input type="checkbox" id="play-sound">
-          <span>Play sound effects</span>
-        </label>
-      </div>
-      <div class="setting-row">
-        <label>
-          <span>Capture delay: </span>
-          <select id="capture-delay">
-            <option value="300">Fast (300ms)</option>
-            <option value="500" selected>Normal (500ms)</option>
-            <option value="1000">Slow (1s)</option>
-          </select>
-        </label>
-      </div>
-    </div>
+    <p id="status" class="status"></p>
+  </main>
 
-    <!-- Footer -->
-    <div class="footer">
-      <button id="help" class="footer-btn">❓ Help</button>
-      <button id="shortcuts" class="footer-btn">⌨️ Shortcuts</button>
-    </div>
-  </div>
-
-  <!-- Loading Overlay -->
-  <div id="loading" class="loading-overlay hidden">
-    <div class="spinner"></div>
-    <div class="loading-text">Capturing screenshot...</div>
-    <div class="loading-progress">
-      <div class="progress-bar">
-        <div id="progress-fill" class="progress-fill"></div>
-      </div>
-      <div id="progress-text" class="progress-text">0%</div>
-    </div>
-  </div>
-
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

@@ -1,52 +1,51 @@
 {
   "manifest_version": 3,
   "name": "Pro Screenshot Annotator",
-  "version": "1.0.0",
-  "description": "Professional screenshot tool with advanced annotation features",
+  "version": "2.0.0",
+  "description": "Capture, annotate, OCR, and export screenshots with production-grade workflows",
   "author": "Vishnu Bishnoi",
   "homepage_url": "https://github.com/vishnubishnoi17/annotated-screenshot-extension",
-  
   "permissions": [
     "tabs",
     "scripting",
     "storage",
     "downloads",
     "activeTab",
-    "contextMenus"
+    "contextMenus",
+    "clipboardWrite"
   ],
-
   "host_permissions": [
     "<all_urls>"
   ],
-
   "background": {
-    "service_worker": "background/serviceWorker.js"
+    "service_worker": "background/serviceWorker.js",
+    "type": "module"
   },
-
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content/scroll.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/scroll.js"
+      ],
       "run_at": "document_start",
       "all_frames": false
     }
   ],
-
-  "action":  {
-    "default_popup":  "popup/popup.html",
+  "action": {
+    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "assets/icons/icon16.png",
       "48": "assets/icons/icon48.png",
       "128": "assets/icons/icon128.png"
     }
   },
-
   "icons": {
     "16": "assets/icons/icon16.png",
     "48": "assets/icons/icon48.png",
     "128": "assets/icons/icon128.png"
   },
-
   "commands": {
     "capture-screenshot": {
       "suggested_key": {
@@ -54,6 +53,13 @@
         "mac": "Command+Shift+S"
       },
       "description": "Capture full page screenshot"
+    },
+    "capture-region": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+R",
+        "mac": "Command+Shift+R"
+      },
+      "description": "Capture selected region"
     }
   }
 }
